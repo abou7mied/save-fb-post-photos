@@ -1,0 +1,17 @@
+{
+  "presets": [
+    [
+      "env",
+      {
+        "modules": false
+      }
+    ]
+  ],
+  "plugins": [
+    "transform-async-to-generator",
+    "transform-class-properties",
+    "transform-object-rest-spread",
+    "transform-export-extensions",
+    "transform-object-assign"
+  ]
+}

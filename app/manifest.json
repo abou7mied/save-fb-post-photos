@@ -1,0 +1,27 @@
+{
+  "manifest_version": 2,
+  "name": "Download facebook post",
+  "description": "This extension allows you to download all photos(original size) in a facebook post.",
+  "version": "0.0.1",
+  "browser_action": {
+    "default_icon": "assets/icon128.png"
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  "permissions": [
+    "downloads"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.facebook.com/*"
+      ],
+      "js": [
+        "build/content.js"
+      ]
+    }
+  ]
+}
