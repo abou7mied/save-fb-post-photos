@@ -42,16 +42,14 @@ function getJsonFromUrl(search) {
   return result;
 }
 
-function download(_2a2q) {
+function download(_2a2q, text) {
   clear();
-  app.visible = true;
-  app.preparing = true;
-  app.images = [];
+  app.init(text);
 
   let a = _2a2q.find("a[rel=theater]");
   let set;
   let mapped = a.toArray().map((item) => {
-    if (window.location.href.indexOf("/posts/") !== -1) {
+    if (item.href.indexOf("/posts/") !== -1 || item.href.indexOf("/photos/") !== -1) {
       let paths = item.href.split("/");
       set = paths[paths.length - 3];
       return paths[paths.length - 2];
@@ -104,17 +102,19 @@ function download(_2a2q) {
 }
 
 function detectTimeNodes() {
+  
   const timeNode = $("._5u5j .fsm.fwn.fcg");
-
   timeNode.each((i, x) => {
     let closest = $(x).closest("._1dwg");
+    let textNode = closest.find(".userContent")[0];
+    let text = textNode.innerText || textNode.textContent;
     let _2a2q = closest.find("._2a2q");
     if (closest && _2a2q.length) {
       let aNodeParent = $('<span class="download"></span>');
       let aNode = $("<a href='#'>Download</a>");
       aNodeParent.append(" ");
       aNodeParent.append(aNode);
-      aNodeParent.click(() => download(_2a2q));
+      aNodeParent.click(() => download(_2a2q, text));
       $(x).parent().find(".download").remove();
       $(x).parent().append(aNodeParent);
     }

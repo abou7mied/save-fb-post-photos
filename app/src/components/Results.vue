@@ -3,10 +3,21 @@
     .overall
     .wrapper
       .buttons
-        button(@click="savePDF" :disabled="working||preparing") Save PDF
-        button(@click="saveZIP" :disabled="working||preparing") Save ZIP
-        button.close(@click="close") Close
-        span(v-if="working") {{working}}
+        .left-side
+          label File Name:
+          input#filename(type="text", v-model="filename")
+          span
+            input(id="add-text", type="checkbox", v-model="addTextEnabled")
+            label(for="add-text") Add the text of the post (PDF doesn't support Arabic yet)
+            textarea(v-show="addTextEnabled", v-model="text")
+          span(v-show="addTextEnabled")
+            input(id="page-break", type="checkbox", v-model="pageBreak")
+            label(for="page-break") Page break
+        .right-side
+          button(@click="savePDF" :disabled="working||preparing") Save PDF
+          button(@click="saveZIP" :disabled="working||preparing") Save ZIP
+          button.close(@click="close") Close
+          span(v-if="working") {{working}}
       .images
         ul
           div(v-if="preparing")
@@ -62,15 +73,38 @@
     }
     .buttons {
       background-color: #fff;
-      text-align: center;
-      padding: 20px 0;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+
+      .left-side {
+        * {
+          vertical-align: middle;
+        }
+      }
     }
-    button {
-      margin: 0 2px;
+    input, textarea {
+      border: 1px solid #345fff;
+    }
+
+    #filename {
+      width: 250px;
+    }
+
+    input, button, textarea {
       padding: 8px 15px;
       border-radius: 30px;
-      border: none;
       font-size: 16px;
+      margin: 10px 2px;
+    }
+
+    textarea {
+      border-radius: 5px;
+      margin: 0 10px;
+    }
+
+    button {
+      border: none;
       color: white;
       background: #345fff;
       cursor: pointer;
@@ -144,12 +178,23 @@
 
   import async from "async";
   import draggable from 'vuedraggable'
-  import pdfMake from "pdfmake/build/pdfmake.js";
+  import pdfMake from "pdfmake/build/pdfmake.min.js";
+  import pdfFonts from "../vfs_fonts.js";
   import fileSaver from "file-saver";
   import JSZip from "jszip";
-  import "pdfmake/build/vfs_fonts.js";
   import {base64ArrayBuffer, rotateBase64Image} from "../helpers";
   import sanitize from "sanitize-filename";
+
+  pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
+  pdfMake.fonts = {
+    defaultFont: {
+      normal: 'font.ttf',
+      bold: 'font.ttf',
+      italics: 'font.ttf',
+      bolditalics: 'font.ttf'
+    },
+  };
 
   export default {
     name: "results",
@@ -158,6 +203,10 @@
     },
     data() {
       return {
+        filename: "",
+        addTextEnabled: false,
+        text: "Hello world ......",
+        pageBreak: true,
         visible: false,
         preparing: false,
         workingOn: -1,
@@ -169,9 +218,20 @@
         if (this.workingOn === -1)
           return;
         return `Working: ${this.workingOn}/${this.images.length}`;
+      },
+      finalFileName() {
+        return sanitize(this.filename || document.title);
       }
     },
     methods: {
+      init(text) {
+        this.visible = true;
+        this.filename = document.title;
+        this.preparing = true;
+        this.images = [];
+        this.text = text ? text.trim() : "";
+        this.addTextEnabled = !!this.text;
+      },
       getImages(callback) {
 
         this.workingOn = 1;
@@ -205,19 +265,26 @@
 
       },
       savePDF() {
-
+        let mapped = [];
+        if (this.addTextEnabled && this.text) {
+          mapped.push({
+            text: this.text,
+            pageBreak: this.pageBreak ? "after" : null,
+          });
+        }
 
         this.getImages((err, results) => {
-          let mapped = results.map((item) => ({
+          mapped = mapped.concat(results.map((item) => ({
             image: item,
             fit: [510, 1000]
-          }));
+          })));
           pdfMake.createPdf({
+            defaultStyle: {
+              font: 'defaultFont'
+            },
             content: mapped,
-          }).download();
-
+          }).download(this.finalFileName);
         });
-
 
       },
       saveZIP() {
@@ -225,27 +292,20 @@
         this.getImages((err, results) => {
           let zip = new JSZip();
 
-          console.log("results", results);
+          if (this.addTextEnabled && this.text) {
+            zip.file("Text.txt", this.text);
+          }
 
           results.forEach((item, i) => {
             let ext = item.indexOf("image/png") !== -1 ? "png" : "jpeg";
             item = item.replace(`data:image/${ext};base64,`, '');
             zip.file(`${i + 1}.${ext}`, item, {base64: true});
           });
-
-
-          zip.generateAsync({type: "blob"}).then(content => {
-            fileSaver.saveAs(content, sanitize(document.title) + ".zip");
-          });
-
+          zip.generateAsync({type: "blob"}).then(content => fileSaver.saveAs(content, this.finalFileName + ".zip"));
         });
-
-
       },
-
       close() {
         this.visible = false;
-        // $(this.$el).fadeOut(200, () => $(this).remove());
       },
       rotate(i, toRight) {
         this.images[i].degree += ((toRight ? 1 : -1) * (90)) + 360;
