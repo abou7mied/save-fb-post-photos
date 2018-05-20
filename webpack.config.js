@@ -1,17 +1,30 @@
 const webpack = require('webpack');
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const WriteFilePlugin = require('write-file-webpack-plugin');
+const isProduction = process.env.NODE_ENV === "production";
 
 
-module.exports = {
+let config = {
   entry: {
+    vendor: [
+      "vue",
+      "jquery",
+      "jszip",
+      "pdfmake/build/pdfmake.min.js",
+      './app/src/vfs_fonts.js',
+      "sanitize-filename",
+      "file-saver",
+    ],
     content: [
       './app/src/content.js'
     ],
-    test:[
+    test: [
       './app/src/test.js'
     ]
   },
+
   output: {
     path: path.resolve(__dirname, 'app/build'),
     filename: '[name].js'
@@ -40,6 +53,13 @@ module.exports = {
     ]
   },
   plugins: [
+    new WriteFilePlugin(),
+
+    new webpack.optimize.CommonsChunkPlugin({
+      names: ["vendor", "manifest"],
+      minChunks: Infinity,
+    }),
+
     new HtmlWebpackPlugin({
       title: 'Facebook post downloader',
       template: 'views/index.pug',
@@ -59,14 +79,6 @@ module.exports = {
       }
     }),
 
-    new webpack.optimize.UglifyJsPlugin({
-      compress: {
-        warnings: false,
-        drop_console: true,
-      },
-      mangle: true
-    })
-
   ],
   resolve: {
     extensions: ['.js', '.vue'],
@@ -81,5 +93,28 @@ module.exports = {
   amd: {
     jQuery: true
   },
-  devtool: 'source-map'
+  devtool: 'source-map',
+  watch: true,
+  watchOptions: {
+    ignored: /node_modules/
+  }
 };
+
+if (isProduction) {
+  config.plugins.push(new webpack.optimize.UglifyJsPlugin({
+    compress: {
+      warnings: false,
+      drop_console: true,
+    },
+    mangle: true
+  }));
+} else {
+  config.plugins.push(new BundleAnalyzerPlugin({
+      analyzerPort: 9999,
+      openAnalyzer: false,
+    })
+  );
+}
+
+
+module.exports = config;
