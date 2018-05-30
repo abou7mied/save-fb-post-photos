@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
-  "name": "Save Photos from a Facebook Post",
-  "short_name": "Save Photos from a Facebook Post",
+  "name": "Save Photos of a Facebook Post",
+  "short_name": "Save Photos of a Facebook Post",
   "description": "This extension allows you to download all photos(original size) in a facebook post.",
   "version": "0.2.3",
   "browser_action": {
