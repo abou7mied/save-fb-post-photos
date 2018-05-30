@@ -1,6 +1,6 @@
 {
   "name": "download-fb-image-post",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Extension allow you to download the whole photos in a facebook post with their original quality. You can download them as a PDF or a zip file",
   "main": "\"\"",
   "directories": {
