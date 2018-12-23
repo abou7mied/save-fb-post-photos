@@ -102,7 +102,7 @@ function download(_2a2q, text) {
 }
 
 function detectTimeNodes() {
-  
+
   const timeNode = $("._5u5j .fsm.fwn.fcg");
   timeNode.each((i, x) => {
     let closest = $(x).closest("._1dwg");
@@ -129,9 +129,11 @@ function getNextOf(id, set, callback) {
   if (set) {
     data.set = set;
   }
+  const fb_dtsg_ag = $('html').html().match(/async_get_token"\s*:\s*"(.*?)"/)[1];
+  console.log("fb_dtsg_ag", fb_dtsg_ag);
   $.ajax({
     url: "https://www.facebook.com/ajax/pagelet/generic.php/PhotoViewerInitPagelet?data=" +
-    encodeURIComponent(JSON.stringify(data)) + "&__a=1",
+      encodeURIComponent(JSON.stringify(data)) + "&__a=1&fb_dtsg_ag=" + encodeURIComponent(fb_dtsg_ag),
     type: "GET",
     dataType: "text",
     error: () => {
