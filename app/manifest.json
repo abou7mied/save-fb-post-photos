@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Save Photos of a Facebook Post",
-  "short_name": "Save Photos of a Facebook Post",
-  "description": "This extension allows you to download all the photos(original size) of a facebook post.",
+  "name": "Save Post Photos as PDF/ZIP",
+  "short_name": "Save Post Photos as PDF/ZIP",
+  "description": "This extension allows you to download the photos of a facebook post with their high quality.",
   "version": "0.2.4",
   "browser_action": {
     "default_icon": "assets/icon128.png"
