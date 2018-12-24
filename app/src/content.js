@@ -44,7 +44,7 @@ function getJsonFromUrl(search) {
 
 function download(_2a2q, text) {
   clear();
-  app.init(text);
+  app.init({text});
 
   let a = _2a2q.find("a[rel=theater]");
   let set;
@@ -89,13 +89,7 @@ function download(_2a2q, text) {
     },
     () => {
       app.preparing = false;
-      app.images = urls.map((url, index) => {
-        return {
-          name: index + 1,
-          degree: 0,
-          url,
-        }
-      });
+      app.setImages(urls);
     }
   ])
 
@@ -107,7 +101,7 @@ function detectTimeNodes() {
   timeNode.each((i, x) => {
     let closest = $(x).closest("._1dwg");
     let textNode = closest.find(".userContent")[0];
-    let text = textNode.innerText || textNode.textContent;
+    let text = textNode && (textNode.innerText || textNode.textContent);
     let _2a2q = closest.find("._2a2q");
     if (closest && _2a2q.length) {
       let aNodeParent = $('<span class="download"></span>');
