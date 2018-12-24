@@ -28,8 +28,10 @@
             div(v-if="preparing")
               | Preparing ...
             draggable(v-model="images")
-              li(v-for="(image, i) in images")
-                .org-order {{image.name}}
+              li(v-for="(image, i) in images" :class="{ignored: image.ignored}")
+                .org-order(:class="{green: image.ignored}" @click="toggleIgnored(image)")
+                  span.text {{image.name}}
+                  span.button {{image.ignored?'+':'X'}}
                 .thumb(:style="{'width': image.width&&image.width+'px', 'height': image.height&&image.height+'px'}")
                   img(:id="'image-'+i" height="350" :src="image.url" :style="{'transform': 'rotate('+image.degree+'deg)'}")
                 .info
@@ -182,18 +184,52 @@
         padding: 10px;
         position: relative;
 
+        &.ignored {
+          opacity: 0.5;
+        }
+
         .org-order {
+          cursor: pointer;
           width: 1em;
           height: 1em;
           position: absolute;
-          font-size: 1.2em;
+          line-height: 1em;
+          font-size: 1em;
           top: 0;
           right: 10px;
-          padding: 3px;
+          padding: 2px;
           border-radius: 50%;
           z-index: 30;
-          background-color: #d62424;
+          background-color: #2e305b;
           color: white;
+
+          span {
+            font-size: 12px;
+            line-height: 12px;
+          }
+
+          .button {
+            display: none;
+          }
+
+          &:hover {
+            background-color: #d62424;
+
+            .button {
+              display: inline-block;
+            }
+
+            .text {
+              display: none;
+            }
+
+          }
+
+          &.green:hover {
+            background-color: #007a1a;
+          }
+
+
         }
 
         .thumb {
@@ -286,11 +322,8 @@
         this.addTextEnabled = !!this.text;
       },
       getImages(callback) {
-
         this.workingOn = 1;
-        console.log("A4", A4);
-
-        async.map(this.images, (item, next) => {
+        async.map(this.images.filter(image => !image.ignored), (item, next) => {
           async.waterfall([
             (next) => {
               console.log("item.url", item.url);
@@ -403,18 +436,15 @@
         this.visible = false;
       },
       setImages(urls) {
-        let str = JSON.stringify(urls);
-        console.log("str", str);
         this.images = urls.map((url, index) => {
           return {
             name: index + 1,
+            ignored: false,
             degree: 0,
             url,
             height: 350,
           }
         });
-        console.log("this.images", this.images);
-
       },
       rotate(i, toRight) {
         let image = this.images[i];
@@ -422,6 +452,9 @@
         image.degree %= 360;
         image.width = (image.degree === 90 || image.degree === 270) ? 350 : undefined;
         image.height = image.width ? $("#image-" + i).width() : 350;
+      },
+      toggleIgnored(image) {
+        image.ignored = !image.ignored;
       }
     }
 
