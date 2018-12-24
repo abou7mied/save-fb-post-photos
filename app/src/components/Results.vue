@@ -160,6 +160,8 @@
       margin: 0 10px;
       font-size: 12px;
       padding: 8px;
+      position: absolute;
+      top: 0;
     }
 
     button {
@@ -319,7 +321,7 @@
       working() {
         if (this.workingOn === -1)
           return;
-        return `Working: ${this.workingOn}/${this.images.length}`;
+        return `Processing: ${this.workingOn}/${this.images.length}`;
       },
       finalFileName() {
         return sanitize((this.filename || document.title).replace(/\./g, ''));
