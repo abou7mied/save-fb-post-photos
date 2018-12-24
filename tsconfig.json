@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "outDir": "built",
+    "allowSyntheticDefaultImports": true,
+    "target": "es6",
+    "module": "commonjs",
+    "allowJs": true,
+    "sourceMap": true,
+    "removeComments": true,
+    "moduleResolution": "node",
+    "lib": [
+      "dom",
+      "es6"
+    ]
+  },
+  "include": [
+    "./js"
+  ],
+  "compileOnSave": true
+}

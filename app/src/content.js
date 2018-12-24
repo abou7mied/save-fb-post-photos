@@ -1,10 +1,10 @@
-import {app} from "./app";
-import async from "async";
+import { app } from './app';
+import async from 'async';
 
 let doneListener;
 let workers = 0;
-let urls = [];
-let photosIds = [];
+const urls = [];
+const photosIds = [];
 let prevScrollHeight;
 
 function clear() {
@@ -14,8 +14,9 @@ function clear() {
 }
 
 function init() {
-  let results = $('<div id="results"></div>');
-  $("body").append(results);
+  const results = $('<div id="results"></div>');
+  $('body')
+    .append(results);
   app.$mount(results[0]);
   clear();
   setInterval(() => {
@@ -33,40 +34,44 @@ function getUrlsOf(array) {
 }
 
 function getJsonFromUrl(search) {
-  let query = search.substr(1);
-  let result = {};
-  query.split("&").forEach(function (part) {
-    let item = part.split("=");
-    result[item[0]] = decodeURIComponent(item[1]);
-  });
+  const query = search.substr(1);
+  const result = {};
+  query.split('&')
+    .forEach((part) => {
+      const item = part.split('=');
+      result[item[0]] = decodeURIComponent(item[1]);
+    });
   return result;
 }
 
 function download(_2a2q, text, postLink) {
   clear();
-  app.init({text, postLink: 'https://www.facebook.com' + postLink});
+  app.init({
+    text,
+    postLink: `https://www.facebook.com${postLink}`,
+  });
 
-  let a = _2a2q.find("a[rel=theater]");
+  const a = _2a2q.find('a[rel=theater]');
   let set;
-  let mapped = a.toArray().map((item) => {
-    if (item.href.indexOf("/posts/") !== -1 || item.href.indexOf("/photos/") !== -1) {
-      let paths = item.href.split("/");
-      set = paths[paths.length - 3];
-      return paths[paths.length - 2];
-    } else {
-      let json = getJsonFromUrl(item.search);
+  let mapped = a.toArray()
+    .map((item) => {
+      if (item.href.indexOf('/posts/') !== -1 || item.href.indexOf('/photos/') !== -1) {
+        const paths = item.href.split('/');
+        set = paths[paths.length - 3];
+        return paths[paths.length - 2];
+      }
+      const json = getJsonFromUrl(item.search);
       set = json.set;
       return json.fbid;
-    }
-  });
+    });
 
   getUrlsOf(mapped);
   async.series([
     (next) => {
       async.doDuring(
-        callback => {
+        (callback) => {
           getNextOf(mapped[mapped.length - 1], set, (err, newIds) => {
-            let filtered = newIds.filter(n => mapped.indexOf(n) !== -1);
+            const filtered = newIds.filter(n => mapped.indexOf(n) !== -1);
             mapped = mapped.concat(newIds);
             mapped = mapped.filter((item, pos) => mapped.indexOf(item) === pos);
             getUrlsOf(mapped);
@@ -78,100 +83,104 @@ function download(_2a2q, text, postLink) {
         },
         () => {
           next();
-        }
+        },
       );
     },
     (next) => {
       if (workers) {
         doneListener = () => next();
-      } else
+      } else {
         next();
+      }
     },
     () => {
       app.preparing = false;
       app.setImages(urls);
-    }
-  ])
-
+    },
+  ]);
 }
 
 function detectTimeNodes() {
-
-  const timeNode = $("._5u5j .fsm.fwn.fcg");
+  const timeNode = $('._5u5j .fsm.fwn.fcg');
   timeNode.each((i, x) => {
-    let closest = $(x).closest("._1dwg");
-    let textNode = closest.find(".userContent")[0];
-    let text = textNode && (textNode.innerText || textNode.textContent);
-    let _2a2q = closest.find("._2a2q");
-    const postLink = closest.find('a._5pcq').attr('href');
+    const closest = $(x)
+      .closest('._1dwg');
+    const textNode = closest.find('.userContent')[0];
+    const text = textNode && (textNode.innerText || textNode.textContent);
+    const _2a2q = closest.find('._2a2q');
+    const postLink = closest.find('a._5pcq')
+      .attr('href');
     if (closest && _2a2q.length) {
-      let aNodeParent = $('<span class="download"></span>');
-      let aNode = $("<a href='#'>Download</a>");
-      aNodeParent.append(" ");
+      const aNodeParent = $('<span class="download"></span>');
+      const aNode = $('<a href=\'#\'>Download</a>');
+      aNodeParent.append(' ');
       aNodeParent.append(aNode);
       aNodeParent.click(() => download(_2a2q, text, postLink));
-      $(x).parent().find(".download").remove();
-      $(x).parent().append(aNodeParent);
+      $(x)
+        .parent()
+        .find('.download')
+        .remove();
+      $(x)
+        .parent()
+        .append(aNodeParent);
     }
   });
-
 }
 
 init();
 
 function getNextOf(id, set, callback) {
-  let data = {fbid: id + ""};
+  const data = { fbid: `${id}` };
   if (set) {
     data.set = set;
   }
-  const fb_dtsg_ag = $('html').html().match(/async_get_token"\s*:\s*"(.*?)"/)[1];
-  console.log("fb_dtsg_ag", fb_dtsg_ag);
+  const fbDtsgAg = $('html')
+    .html()
+    .match(/async_get_token"\s*:\s*"(.*?)"/)[1];
   $.ajax({
-    url: "https://www.facebook.com/ajax/pagelet/generic.php/PhotoViewerInitPagelet?data=" +
-      encodeURIComponent(JSON.stringify(data)) + "&__a=1&fb_dtsg_ag=" + encodeURIComponent(fb_dtsg_ag),
-    type: "GET",
-    dataType: "text",
+    url: `https://www.facebook.com/ajax/pagelet/generic.php/PhotoViewerInitPagelet?data=${
+      encodeURIComponent(JSON.stringify(data))}&__a=1&fb_dtsg_ag=${encodeURIComponent(fbDtsgAg)}`,
+    type: 'GET',
+    dataType: 'text',
     error: () => {
       callback(true);
     },
     success: (result) => {
-      let myRegexp = /(?="addPhotoFbids")(.*?)(],\[\[)(.*?)(])/g;
-      let match = myRegexp.exec(result);
-      let ids = "[" + match[3] + "]";
-      callback(null, JSON.parse(ids))
+      const myRegexp = /(?="addPhotoFbids")(.*?)(],\[\[)(.*?)(])/g;
+      const match = myRegexp.exec(result);
+      const ids = `[${match[3]}]`;
+      callback(null, JSON.parse(ids));
     },
   });
 }
 
 
 function getOriginalUrl(id, callback) {
-
   $.ajax({
-    url: "https://www.facebook.com/ajax/photos/snowlift/menu/?fbid=" + id,
-    type: "POST",
+    url: `https://www.facebook.com/ajax/photos/snowlift/menu/?fbid=${id}`,
+    type: 'POST',
     data: {
-      __a: "1",
-      fb_dtsg: $("input[name=fb_dtsg]").val(),
+      __a: '1',
+      fb_dtsg: $('input[name=fb_dtsg]')
+        .val(),
     },
-    dataType: "text",
+    dataType: 'text',
     error: () => {
       --workers;
       callback(true);
     },
     success: (data) => {
-      let matched = data.match(/"download_photo","href":"(.*?)"/);
+      const matched = data.match(/"download_photo","href":"(.*?)"/);
       let finalResult;
-      if (matched)
-        finalResult = matched[1].replace(/\\/g, "");
+      if (matched) finalResult = matched[1].replace(/\\/g, '');
       callback(!finalResult, finalResult);
     },
-  })
-
+  });
 }
 
 
 function addPhotoId(id, i) {
-  id += "";
+  id += '';
   if (photosIds.indexOf(id) !== -1) {
     return;
   }
