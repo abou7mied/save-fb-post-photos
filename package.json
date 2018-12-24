@@ -1,6 +1,6 @@
 {
   "name": "save-post-photos",
-  "version": "0.2.4",
+  "version": "0.3.1",
   "description": "This extension allows you to download the photos of a facebook post with their high quality. You can download them as a PDF or a zip file. Please note this is not an official extension and it's not provided by Facebook.",
   "main": "",
   "directories": {
