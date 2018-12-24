@@ -12,12 +12,17 @@
       .scroll-view
         .buttons
           .left-side
-            label File Name:
-            input#filename(type="text", v-model="filename")
-            span
-              input(id="add-text", type="checkbox", v-model="addTextEnabled")
-              label(for="add-text") Add the text of the post (PDF doesn't support Arabic yet)
-              textarea(v-show="addTextEnabled", v-model="text")
+            div
+              label File Name:
+              input#filename(type="text", v-model="filename")
+            div
+              div
+                input(id="add-post-link", type="checkbox", v-model="addLinkEnabled")
+                label(for="add-post-link") Add The Post Link
+              div
+                input(id="add-text", type="checkbox", v-model="addTextEnabled")
+                label(for="add-text") Add The Post Caption (No Arabic support yet)
+                textarea(v-show="addTextEnabled" rows="1" v-model="text")
           .right-side
             button(@click="savePDF" :disabled="working||preparing") Save PDF
             button(@click="saveZIP" :disabled="working||preparing") Save ZIP
@@ -117,6 +122,10 @@
           vertical-align: middle;
         }
 
+        > div {
+          display: inline-block;
+        }
+
       }
 
       .right-side {
@@ -149,6 +158,8 @@
     textarea {
       border-radius: 5px;
       margin: 0 10px;
+      font-size: 12px;
+      padding: 8px;
     }
 
     button {
@@ -294,7 +305,9 @@
       return {
         filename: "",
         addTextEnabled: false,
+        addLinkEnabled: true,
         text: "",
+        postLink: "",
         pageBreak: true,
         visible: false,
         preparing: false,
@@ -313,11 +326,12 @@
       }
     },
     methods: {
-      init({text}) {
+      init({text, postLink}) {
         this.visible = true;
         this.preparing = true;
         this.images = [];
         this.text = text ? text.trim() : "";
+        this.postLink = postLink || "";
         this.filename = this.text.split(/\s+/g).slice(0, 10).join(" ");
         this.addTextEnabled = !!this.text;
       },
@@ -348,7 +362,6 @@
               const i = new Image();
               i.onload = () => {
                 const calculateImageData = this.calculateImageData(i.width, i.height);
-                console.log("calculateImageData", calculateImageData);
                 next(null, Object.assign(calculateImageData, {data: base64}));
               };
               i.src = base64;
@@ -388,13 +401,15 @@
       },
       savePDF() {
         let mapped = [];
+        const text = [];
         if (this.addTextEnabled && this.text) {
-
-          mapped.push({
-            text: this.text,
-            margin: [40, 40],
-            pageBreak: "after",
-          });
+          text.push({text: this.text + '\n'});
+        }
+        if (this.addLinkEnabled) {
+          text.push({text: "Post Link", link: this.postLink, decoration: "underline", fontSize: 15, color: "#0366d6"})
+        }
+        if (text.length) {
+          mapped.push({text: text, margin: [40, 40], pageBreak: "after"});
         }
 
         this.getImages((err, results) => {
@@ -420,14 +435,18 @@
         this.getImages((err, results) => {
           let zip = new JSZip();
 
-          if (this.addTextEnabled && this.text) {
-            zip.file("Text.txt", this.text);
+          let text = this.addTextEnabled && this.text;
+          if (text || this.addLinkEnabled) {
+            if (this.addLinkEnabled) {
+              text = (text || "") + "\n\nLink:\n" + this.postLink;
+            }
+            zip.file("Caption.txt", text);
           }
-
           results.forEach((item, i) => {
-            let ext = item.indexOf("image/png") !== -1 ? "png" : "jpeg";
-            item = item.replace(`data:image/${ext};base64,`, '');
-            zip.file(`${i + 1}.${ext}`, item.data, {base64: true});
+            let {data} = item;
+            let ext = data.indexOf("image/png") !== -1 ? "png" : "jpeg";
+            data = data.replace(`data:image/${ext};base64,`, '');
+            zip.file(`${i + 1}.${ext}`, data, {base64: true});
           });
           zip.generateAsync({type: "blob"}).then(content => fileSaver.saveAs(content, this.finalFileName + ".zip"));
         });

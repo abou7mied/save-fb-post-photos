@@ -42,9 +42,9 @@ function getJsonFromUrl(search) {
   return result;
 }
 
-function download(_2a2q, text) {
+function download(_2a2q, text, postLink) {
   clear();
-  app.init({text});
+  app.init({text, postLink: 'https://www.facebook.com' + postLink});
 
   let a = _2a2q.find("a[rel=theater]");
   let set;
@@ -103,12 +103,13 @@ function detectTimeNodes() {
     let textNode = closest.find(".userContent")[0];
     let text = textNode && (textNode.innerText || textNode.textContent);
     let _2a2q = closest.find("._2a2q");
+    const postLink = closest.find('a._5pcq').attr('href');
     if (closest && _2a2q.length) {
       let aNodeParent = $('<span class="download"></span>');
       let aNode = $("<a href='#'>Download</a>");
       aNodeParent.append(" ");
       aNodeParent.append(aNode);
-      aNodeParent.click(() => download(_2a2q, text));
+      aNodeParent.click(() => download(_2a2q, text, postLink));
       $(x).parent().find(".download").remove();
       $(x).parent().append(aNodeParent);
     }
