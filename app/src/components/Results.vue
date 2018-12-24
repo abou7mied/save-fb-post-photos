@@ -22,7 +22,7 @@
               div
                 input(id="add-text", type="checkbox", v-model="addTextEnabled")
                 label(for="add-text") Add The Post Caption (No Arabic support yet)
-                textarea(v-show="addTextEnabled" rows="1" v-model="text")
+                textarea(v-show="addTextEnabled" rows="3" v-model="text")
           .right-side
             button(@click="savePDF" :disabled="working||preparing") Save PDF
             button(@click="saveZIP" :disabled="working||preparing") Save ZIP
