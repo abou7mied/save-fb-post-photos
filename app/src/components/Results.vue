@@ -277,15 +277,15 @@
 
 <script>
 
-  import async from "async";
-  import draggable from 'vuedraggable'
-  import pdfMake from "pdfmake/build/pdfmake.min.js";
-  import {A4} from "pdfmake/src/standardPageSizes";
-  import pdfFonts from "../vfs_fonts.js";
-  import fileSaver from "file-saver";
-  import JSZip from "jszip";
-  import {base64ArrayBuffer, rotateBase64Image} from "../helpers";
-  import sanitize from "sanitize-filename";
+  import async from 'async';
+  import draggable from 'vuedraggable';
+  import pdfMake from 'pdfmake/build/pdfmake.min.js';
+  import { A4 } from 'pdfmake/src/standardPageSizes';
+  import pdfFonts from '../vfs_fonts.js';
+  import fileSaver from 'file-saver';
+  import JSZip from 'jszip';
+  import { base64ArrayBuffer, rotateBase64Image } from '../helpers';
+  import sanitize from 'sanitize-filename';
 
   pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
@@ -299,28 +299,29 @@
   };
 
   export default {
-    name: "results",
+    name: 'results',
     components: {
       draggable,
     },
     data() {
       return {
-        filename: "",
+        filename: '',
         addTextEnabled: false,
         addLinkEnabled: true,
-        text: "",
-        postLink: "",
+        text: '',
+        postLink: '',
         pageBreak: true,
         visible: false,
         preparing: false,
         workingOn: -1,
         images: []
-      }
+      };
     },
     computed: {
       working() {
-        if (this.workingOn === -1)
+        if (this.workingOn === -1) {
           return;
+        }
         return `Processing: ${this.workingOn}/${this.images.length}`;
       },
       finalFileName() {
@@ -328,13 +329,15 @@
       }
     },
     methods: {
-      init({text, postLink}) {
+      init({ text, postLink }) {
         this.visible = true;
         this.preparing = true;
         this.images = [];
-        this.text = text ? text.trim() : "";
-        this.postLink = postLink || "";
-        this.filename = this.text.split(/\s+/g).slice(0, 10).join(" ");
+        this.text = text ? text.trim() : '';
+        this.postLink = postLink || '';
+        this.filename = this.text.split(/\s+/g)
+          .slice(0, 10)
+          .join(' ');
         this.addTextEnabled = !!this.text;
       },
       getImages(callback) {
@@ -342,29 +345,30 @@
         async.map(this.images.filter(image => !image.ignored), (item, next) => {
           async.waterfall([
             (next) => {
-              console.log("item.url", item.url);
+              console.log('item.url', item.url);
               $.ajax({
                 url: item.url,
-                type: "GET",
-                dataType: "binary",
+                type: 'GET',
+                dataType: 'binary',
                 responseType: 'arraybuffer',
                 processData: false,
                 success: (result) => next(null, base64ArrayBuffer(result)),
-              })
+              });
             },
             (base64, next) => {
               this.workingOn++;
               base64 = 'data:image/jpeg;base64,' + base64;
               if (item.degree > 0) {
                 rotateBase64Image(base64, item.degree, newBase64 => next(null, newBase64));
-              } else
-                next(null, base64)
+              } else {
+                next(null, base64);
+              }
             },
             (base64, next) => {
               const i = new Image();
               i.onload = () => {
                 const calculateImageData = this.calculateImageData(i.width, i.height);
-                next(null, Object.assign(calculateImageData, {data: base64}));
+                next(null, Object.assign(calculateImageData, { data: base64 }));
               };
               i.src = base64;
             }
@@ -377,11 +381,14 @@
 
       },
       calculateImageData(width, height) {
-        console.log("width", width);
-        console.log("height", height);
+        console.log('width', width);
+        console.log('height', height);
 
         const widthIsBigger = width > height;
-        const results = {width, height};
+        const results = {
+          width,
+          height
+        };
         if (widthIsBigger) {
           results.width = A4[0];
           const scale = results.width / width;
@@ -405,22 +412,35 @@
         let mapped = [];
         const text = [];
         if (this.addTextEnabled && this.text) {
-          text.push({text: this.text + '\n'});
+          text.push({ text: this.text + '\n' });
         }
         if (this.addLinkEnabled) {
-          text.push({text: "Post Link", link: this.postLink, decoration: "underline", fontSize: 15, color: "#0366d6"})
+          text.push({
+            text: 'Post Link',
+            link: this.postLink,
+            decoration: 'underline',
+            fontSize: 15,
+            color: '#0366d6'
+          });
         }
         if (text.length) {
-          mapped.push({text: text, margin: [40, 40], pageBreak: "after"});
+          mapped.push({
+            text: text,
+            margin: [40, 40],
+            pageBreak: 'after'
+          });
         }
 
         this.getImages((err, results) => {
           mapped = mapped.concat(results.map((item, i) => Object.assign(item, {
             image: item.data,
-            pageBreak: i !== results.length - 1 && "after",
+            pageBreak: i !== results.length - 1 && 'after',
           })));
-          let info = mapped.map(i => Object.assign({}, i, {image: null, data: null}));
-          console.log("JSON.stringify(info)", JSON.stringify(info));
+          let info = mapped.map(i => Object.assign({}, i, {
+            image: null,
+            data: null
+          }));
+          console.log('JSON.stringify(info)', JSON.stringify(info));
           pdfMake.createPdf({
             pageSize: 'A4',
             pageMargins: [0, 0, 0, 0],
@@ -428,7 +448,8 @@
               font: 'defaultFont'
             },
             content: mapped,
-          }).download(this.finalFileName);
+          })
+            .download(this.finalFileName);
         });
 
       },
@@ -440,17 +461,18 @@
           let text = this.addTextEnabled && this.text;
           if (text || this.addLinkEnabled) {
             if (this.addLinkEnabled) {
-              text = (text || "") + "\n\nLink:\n" + this.postLink;
+              text = (text || '') + '\n\nLink:\n' + this.postLink;
             }
-            zip.file("Caption.txt", text);
+            zip.file('Caption.txt', text);
           }
           results.forEach((item, i) => {
-            let {data} = item;
-            let ext = data.indexOf("image/png") !== -1 ? "png" : "jpeg";
+            let { data } = item;
+            let ext = data.indexOf('image/png') !== -1 ? 'png' : 'jpeg';
             data = data.replace(`data:image/${ext};base64,`, '');
-            zip.file(`${i + 1}.${ext}`, data, {base64: true});
+            zip.file(`${i + 1}.${ext}`, data, { base64: true });
           });
-          zip.generateAsync({type: "blob"}).then(content => fileSaver.saveAs(content, this.finalFileName + ".zip"));
+          zip.generateAsync({ type: 'blob' })
+            .then(content => fileSaver.saveAs(content, this.finalFileName + '.zip'));
         });
       },
       close() {
@@ -464,7 +486,7 @@
             degree: 0,
             url,
             height: 350,
-          }
+          };
         });
       },
       rotate(i, toRight) {
@@ -472,7 +494,8 @@
         image.degree += ((toRight ? 1 : -1) * (90)) + 360;
         image.degree %= 360;
         image.width = (image.degree === 90 || image.degree === 270) ? 350 : undefined;
-        image.height = image.width ? $("#image-" + i).width() : 350;
+        image.height = image.width ? $('#image-' + i)
+          .width() : 350;
       },
       toggleIgnored(image) {
         image.ignored = !image.ignored;
