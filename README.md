@@ -1,8 +1,4 @@
-# Download Facebook Post Photos as PDF/ZIP
-
-
-
-
+# Save Facebook Post Photos as PDF/ZIP
 This is a chrome extension allows you to save the photos of a Facebook post with their high quality as a PDF or a zip file.
 
 ##Features:
