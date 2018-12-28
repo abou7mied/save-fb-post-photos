@@ -10,7 +10,7 @@ This is a chrome extension allows you to save the photos of a Facebook post with
 ![](screenshots/1.jpg) 
 ![](screenshots/2.jpg) 
 
-##Disclaimer
-This extension doesn't violate Facebook terms of use or media rights, it only allows you to download the photos that have "Download" button enabled.
-This is not an offical extension and it's not provided by Facebook.
+## Disclaimer
+This extension does not violate Facebook terms of use or media rights, it only allows you to download the photos that have "Download" button enabled.
+This is not an official extension and it's not provided by Facebook.
 
