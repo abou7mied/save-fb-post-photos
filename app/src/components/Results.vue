@@ -20,8 +20,11 @@
                 input(id="add-post-link", type="checkbox", v-model="addLinkEnabled")
                 label(for="add-post-link") Add The Post Link
               div
+                input(id="fill-photos", type="checkbox", v-model="fillPhotos")
+                label(for="fill-photos") Fill Photos (Edges may be cropped)
+              div
                 input(id="add-text", type="checkbox", v-model="addTextEnabled")
-                label(for="add-text") Add The Post Caption (No Arabic support yet)
+                label(for="add-text") Add The Post Caption
                 textarea(v-show="addTextEnabled" rows="3" v-model="text")
           .right-side
             button(@click="savePDF" :disabled="working||preparing") Save PDF
@@ -145,10 +148,10 @@
     }
 
     #filename {
-      width: 250px;
+      width: 200px;
     }
 
-    input, button, textarea {
+    input[type=text], button, textarea {
       padding: 8px 15px;
       border-radius: 30px;
       font-size: 16px;
@@ -161,6 +164,8 @@
       font-size: 12px;
       padding: 8px;
       position: absolute;
+      left: 100%;
+      width: 200px;
       top: 0;
     }
 
@@ -284,7 +289,7 @@
   import pdfFonts from '../vfs_fonts.js';
   import fileSaver from 'file-saver';
   import JSZip from 'jszip';
-  import { base64ArrayBuffer, rotateBase64Image } from '../helpers';
+  import { base64ArrayBuffer, replaceSpace, rotateBase64Image } from '../helpers';
   import sanitize from 'sanitize-filename';
 
   pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -308,7 +313,9 @@
         filename: '',
         addTextEnabled: false,
         addLinkEnabled: true,
+        fillPhotos: false,
         text: '',
+        textAtRight: '',
         postLink: '',
         pageBreak: true,
         visible: false,
@@ -329,11 +336,12 @@
       }
     },
     methods: {
-      init({ text, postLink }) {
+      init({ text, postLink, textAtRight }) {
         this.visible = true;
         this.preparing = true;
         this.images = [];
-        this.text = text ? text.trim() : '';
+        this.text = text.trim() ? text.trim() : document.title;
+        this.textAtRight = textAtRight;
         this.postLink = postLink || '';
         this.filename = this.text.split(/\s+/g)
           .slice(0, 10)
@@ -356,7 +364,9 @@
               });
             },
             (base64, next) => {
-              this.workingOn++;
+              if (this.workingOn < this.images.length) {
+                this.workingOn++;
+              }
               base64 = 'data:image/jpeg;base64,' + base64;
               if (item.degree > 0) {
                 rotateBase64Image(base64, item.degree, newBase64 => next(null, newBase64));
@@ -381,38 +391,37 @@
 
       },
       calculateImageData(width, height) {
-        console.log('width', width);
-        console.log('height', height);
-
-        const widthIsBigger = width > height;
         const results = {
           width,
           height
         };
-        if (widthIsBigger) {
+        const widthScale = A4[0] / width;
+        const heightDiff = A4[1] / height;
+        const matchWidth = this.fillPhotos ? widthScale > heightDiff : widthScale < heightDiff;
+        if (matchWidth) {
           results.width = A4[0];
           const scale = results.width / width;
-          results.height = this.fixNumber(height * scale);
+          results.height = height * scale;
         } else {
           results.height = A4[1];
           const scale = results.height / height;
-          results.width = this.fixNumber(width * scale);
+          results.width = width * scale;
         }
         return Object.assign(results, {
           margin: [
-            this.fixNumber((A4[0] - results.width) / 2),
-            this.fixNumber((A4[1] - results.height) / 2),
+            (A4[0] - results.width) / 2,
+            (A4[1] - results.height) / 2,
           ]
         });
-      },
-      fixNumber(number) {
-        return +(number.toFixed(2));
       },
       savePDF() {
         let mapped = [];
         const text = [];
         if (this.addTextEnabled && this.text) {
-          text.push({ text: this.text + '\n' });
+          text.push({
+            text: replaceSpace(this.text) + '\n',
+            alignment: this.textAtRight ? 'right' : 'left',
+          });
         }
         if (this.addLinkEnabled) {
           text.push({
@@ -436,11 +445,6 @@
             image: item.data,
             pageBreak: i !== results.length - 1 && 'after',
           })));
-          let info = mapped.map(i => Object.assign({}, i, {
-            image: null,
-            data: null
-          }));
-          console.log('JSON.stringify(info)', JSON.stringify(info));
           pdfMake.createPdf({
             pageSize: 'A4',
             pageMargins: [0, 0, 0, 0],
@@ -501,6 +505,5 @@
         image.ignored = !image.ignored;
       }
     }
-
-  }
+  };
 </script>

@@ -24,7 +24,7 @@ function init() {
       prevScrollHeight = document.documentElement.scrollHeight;
       detectTimeNodes();
     }
-  }, 2000);
+  }, 1500);
 }
 
 function getUrlsOf(array) {
@@ -44,14 +44,15 @@ function getJsonFromUrl(search) {
   return result;
 }
 
-function download(_2a2q, text, postLink) {
+function download({ node, text, postLink, textAtRight }) {
   clear();
   app.init({
     text,
+    textAtRight,
     postLink: `https://www.facebook.com${postLink}`,
   });
 
-  const a = _2a2q.find('a[rel=theater]');
+  const a = node.find('a[rel=theater]');
   let set;
   let mapped = a.toArray()
     .map((item) => {
@@ -107,6 +108,9 @@ function detectTimeNodes() {
       .closest('._1dwg');
     const textNode = closest.find('.userContent')[0];
     const text = textNode && (textNode.innerText || textNode.textContent);
+    const textAtRight = closest.find('.userContent p')
+      .eq(0)
+      .css('text-align') === 'right';
     const _2a2q = closest.find('._2a2q');
     const postLink = closest.find('a._5pcq')
       .attr('href');
@@ -115,7 +119,12 @@ function detectTimeNodes() {
       const aNode = $('<a href=\'#\'>Download</a>');
       aNodeParent.append(' ');
       aNodeParent.append(aNode);
-      aNodeParent.click(() => download(_2a2q, text, postLink));
+      aNodeParent.click(() => download({
+        node: _2a2q,
+        text,
+        postLink,
+        textAtRight,
+      }));
       $(x)
         .parent()
         .find('.download')

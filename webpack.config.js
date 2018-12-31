@@ -1,62 +1,63 @@
 const webpack = require('webpack');
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const WriteFilePlugin = require('write-file-webpack-plugin');
-const isProduction = process.env.NODE_ENV === "production";
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 
-let config = {
+const config = {
   entry: {
     vendor: [
-      "vue",
-      "jquery",
-      "jszip",
-      "pdfmake/build/pdfmake.min.js",
+      'vue',
+      'jquery',
+      'jszip',
+      'pdfmake/build/pdfmake.min.js',
       './app/src/vfs_fonts.js',
-      "sanitize-filename",
-      "file-saver",
+      'sanitize-filename',
+      'file-saver',
     ],
     content: [
-      './app/src/content.js'
+      './app/src/content.js',
     ],
     test: [
-      './app/src/test.js'
-    ]
+      './app/src/test.js',
+    ],
   },
 
   output: {
     path: path.resolve(__dirname, 'app/build'),
-    filename: '[name].js'
+    filename: '[name].js',
   },
   module: {
     loaders: [
       {
         test: /\.js$/,
         exclude: /(node_modules)/,
-        loader: 'babel-loader'
+        loader: 'babel-loader',
       },
       {
         test: /\.vue$/,
-        loader: "vue-loader",
+        loader: 'vue-loader',
         options: {
           loaders: {
-            'scss': "vue-style-loader!css-loader!sass-loader"
-          }
-        }
+            scss: 'vue-style-loader!css-loader!sass-loader',
+          },
+        },
       },
       {
         test: /\.pug$/,
-        loader: "pug-loader"
+        loader: 'pug-loader',
       },
 
-    ]
+    ],
   },
   plugins: [
     new WriteFilePlugin(),
 
     new webpack.optimize.CommonsChunkPlugin({
-      names: ["vendor", "manifest"],
+      names: ['vendor', 'manifest'],
       minChunks: Infinity,
     }),
 
@@ -66,38 +67,37 @@ let config = {
       filename: 'index.html',
       inject: 'head',
       alwaysWriteToDisk: true,
-      excludeChunks: ["content"]
+      excludeChunks: ['content'],
     }),
 
     new webpack.ProvidePlugin({
-      $: "jquery",
+      $: 'jquery',
     }),
 
     new webpack.DefinePlugin({
       'process.env': {
-        NODE_ENV: '"production"'
-      }
+        NODE_ENV: '"production"',
+      },
     }),
 
   ],
   resolve: {
     extensions: ['.js', '.vue'],
     alias: {
-      'vue': 'vue/dist/vue.js'
-    }
+      vue: 'vue/dist/vue.js',
+    },
   },
   stats: {
-    colors: true
+    colors: true,
   },
 
   amd: {
-    jQuery: true
+    jQuery: true,
   },
   devtool: 'source-map',
-  watch: true,
   watchOptions: {
-    ignored: /node_modules/
-  }
+    ignored: /node_modules/,
+  },
 };
 
 if (isProduction) {
@@ -106,14 +106,13 @@ if (isProduction) {
       warnings: false,
       drop_console: true,
     },
-    mangle: true
+    mangle: true,
   }));
 } else {
   config.plugins.push(new BundleAnalyzerPlugin({
-      analyzerPort: 9999,
-      openAnalyzer: false,
-    })
-  );
+    analyzerPort: 9999,
+    openAnalyzer: false,
+  }));
 }
 
 

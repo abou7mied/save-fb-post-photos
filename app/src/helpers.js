@@ -143,4 +143,11 @@ function rotateBase64Image(base64data, givenDegrees, callback) {
   };
 }
 
-export { base64ArrayBuffer, rotateBase64Image };
+function replaceSpace(text) {
+  // return text.replace(/(?=\W) (?=\W)/g, '\u00A0');
+  return text.replace(/(\W) (\W)/g, (...args) => {
+    return args[1] + '\u00A0' + args[2];
+  });
+}
+
+export { base64ArrayBuffer, rotateBase64Image, replaceSpace };
