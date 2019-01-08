@@ -21,12 +21,12 @@
                 input(id="add-post-link", type="checkbox", v-model="addLinkEnabled")
                 label(for="add-post-link") Add The Post Link
               div
-                input(id="fill-photos", type="checkbox", v-model="fillPhotos")
-                label(for="fill-photos") Fill Photos (Edges may be cropped)
-              div
                 input(id="add-text", type="checkbox", v-model="addTextEnabled")
                 label(for="add-text") Add The Post Caption
                 textarea(v-show="addTextEnabled" rows="3" v-model="text")
+              div
+                input(id="fill-photos", type="checkbox", v-model="fillPhotos")
+                label(for="fill-photos") Fill Photos (Edges may be cropped)
               div
                 input(id="no-preview", type="checkbox", v-model="hidePreview")
                 label(for="no-preview") Hide Preview
