@@ -95,7 +95,6 @@ function download({ node, text, postLink, textAtRight }) {
       }
     },
     () => {
-      app.preparing = false;
       app.setImages(urls);
     },
   ]);

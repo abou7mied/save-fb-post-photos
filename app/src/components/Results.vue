@@ -14,7 +14,8 @@
           .left-side
             div
               label File Name:
-              input#filename(type="text", v-model="filename")
+              div
+                input#filename(type="text", v-model="filename")
             div
               div
                 input(id="add-post-link", type="checkbox", v-model="addLinkEnabled")
@@ -26,6 +27,9 @@
                 input(id="add-text", type="checkbox", v-model="addTextEnabled")
                 label(for="add-text") Add The Post Caption
                 textarea(v-show="addTextEnabled" rows="3" v-model="text")
+              div
+                input(id="no-preview", type="checkbox", v-model="hidePreview")
+                label(for="no-preview") Hide Preview
           .right-side
             button(@click="savePDF" :disabled="working||preparing") Save PDF
             button(@click="saveZIP" :disabled="working||preparing") Save ZIP
@@ -35,7 +39,12 @@
           ul
             div(v-if="preparing")
               | Preparing ...
-            draggable(v-model="images")
+            template(v-if="!preparing && hidePreview")
+              p(v-if="hidePreview===1") Preview auto disabled because photos count is larger than {{DISABLE_PREVIEW_THRESHOLD}}, but you can re-enable it if you want.
+              p Photos count is
+                b {{' '+images.length+''}}
+              p It's ready to be downloaded.
+            draggable(v-else v-model="images")
               li(v-for="(image, i) in images" :class="{ignored: image.ignored}")
                 .org-order(:class="{green: image.ignored}" @click="toggleIgnored(image)")
                   span.text {{image.name}}
@@ -123,6 +132,10 @@
 
         * {
           vertical-align: middle;
+        }
+
+        label {
+          font-size: 12px;
         }
 
         > div {
@@ -303,6 +316,7 @@
     },
   };
 
+
   export default {
     name: 'results',
     components: {
@@ -321,7 +335,9 @@
         visible: false,
         preparing: false,
         workingOn: -1,
-        images: []
+        images: [],
+        hidePreview: false,
+        DISABLE_PREVIEW_THRESHOLD: 50,
       };
     },
     computed: {
@@ -492,6 +508,10 @@
             height: 350,
           };
         });
+        this.preparing = false;
+        if (urls.length > this.DISABLE_PREVIEW_THRESHOLD) {
+          this.hidePreview = 1;
+        }
       },
       rotate(i, toRight) {
         let image = this.images[i];
