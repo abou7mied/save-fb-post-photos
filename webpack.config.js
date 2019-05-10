@@ -21,6 +21,10 @@ const config = {
     content: [
       './app/src/content.js',
     ],
+    background: [
+      'jquery',
+      './app/src/background.js',
+    ],
     test: [
       './app/src/test.js',
     ],
@@ -31,7 +35,7 @@ const config = {
     filename: '[name].js',
   },
   module: {
-    loaders: [
+    rules: [
       {
         test: /\.js$/,
         exclude: /(node_modules)/,
@@ -55,11 +59,6 @@ const config = {
   },
   plugins: [
     new WriteFilePlugin(),
-
-    new webpack.optimize.CommonsChunkPlugin({
-      names: ['vendor', 'manifest'],
-      minChunks: Infinity,
-    }),
 
     new HtmlWebpackPlugin({
       title: 'Facebook post downloader',
@@ -100,20 +99,6 @@ const config = {
   },
 };
 
-if (isProduction) {
-  config.plugins.push(new webpack.optimize.UglifyJsPlugin({
-    compress: {
-      warnings: false,
-      drop_console: true,
-    },
-    mangle: true,
-  }));
-} else {
-  config.plugins.push(new BundleAnalyzerPlugin({
-    analyzerPort: 9999,
-    openAnalyzer: false,
-  }));
-}
 
 
 module.exports = config;
