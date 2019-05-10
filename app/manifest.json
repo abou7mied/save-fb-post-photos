@@ -12,19 +12,26 @@
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   },
-  "permissions": [
-    "downloads"
-  ],
   "content_scripts": [
     {
       "matches": [
         "https://www.facebook.com/*"
       ],
       "js": [
-        "build/manifest.js",
-        "build/vendor.js",
         "build/content.js"
       ]
     }
+  ],
+  "background": {
+    "scripts": [
+      "build/background.js"
+    ],
+    "persistent": true
+  },
+  "permissions": [
+    "webRequest",
+    "downloads",
+    "webRequestBlocking",
+    "https://www.facebook.com/*"
   ]
 }
