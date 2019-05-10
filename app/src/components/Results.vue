@@ -457,7 +457,8 @@
         }
 
         this.getImages((err, results) => {
-          mapped = mapped.concat(results.map((item, i) => Object.assign(item, {
+          mapped = mapped.concat(results.map((item, i) => ({
+            ...item,
             image: item.data,
             pageBreak: i !== results.length - 1 && 'after',
           })));
