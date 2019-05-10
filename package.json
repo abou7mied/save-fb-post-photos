@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "webpack": "webpack-dev-server --watch",
     "webpack-dev-server": "webpack-dev-server --config webpack.config.js --hot --watch --colors",
-    "webpack-dev-server-prod": "cross-env NODE_ENV=production webpack"
+    "webpack-dev-server-prod": "cross-env NODE_ENV=production webpack --mode=production"
   },
   "author": "Ahmed Sabry",
   "license": "ISC",
