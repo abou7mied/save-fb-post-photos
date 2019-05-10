@@ -1,16 +1,14 @@
 import { app } from './app';
 import async from 'async';
 
-let doneListener;
-let workers = 0;
 const urls = [];
 const photosIds = [];
 let prevScrollHeight;
+const getUrlPromises = [];
 
 function clear() {
   photosIds.splice(0);
   urls.splice(0);
-  workers = 0;
 }
 
 function init() {
@@ -70,14 +68,13 @@ function download({ node, text, postLink, textAtRight }) {
   async.series([
     (next) => {
       async.doDuring(
-        (callback) => {
-          getNextOf(mapped[mapped.length - 1], set, (err, newIds) => {
-            const filtered = newIds.filter(n => mapped.indexOf(n) !== -1);
-            mapped = mapped.concat(newIds);
-            mapped = mapped.filter((item, pos) => mapped.indexOf(item) === pos);
-            getUrlsOf(mapped);
-            callback(null, filtered);
-          });
+        async (callback) => {
+          const newIds = await getNextOf(mapped[mapped.length - 1], set);
+          const filtered = newIds.filter(n => mapped.indexOf(n) !== -1);
+          mapped = mapped.concat(newIds);
+          mapped = mapped.filter((item, pos) => mapped.indexOf(item) === pos);
+          getUrlsOf(mapped);
+          callback(null, filtered);
         },
         (filtered, callback) => {
           callback(null, !filtered.length);
@@ -87,14 +84,8 @@ function download({ node, text, postLink, textAtRight }) {
         },
       );
     },
-    (next) => {
-      if (workers) {
-        doneListener = () => next();
-      } else {
-        next();
-      }
-    },
-    () => {
+    async () => {
+      await Promise.all(getUrlPromises);
       app.setImages(urls);
     },
   ]);
@@ -137,7 +128,7 @@ function detectTimeNodes() {
 
 init();
 
-function getNextOf(id, set, callback) {
+async function getNextOf(id, set) {
   const data = { fbid: `${id}` };
   if (set) {
     data.set = set;
@@ -145,44 +136,45 @@ function getNextOf(id, set, callback) {
   const fbDtsgAg = $('html')
     .html()
     .match(/async_get_token"\s*:\s*"(.*?)"/)[1];
-  $.ajax({
-    url: `https://www.facebook.com/ajax/pagelet/generic.php/PhotoViewerInitPagelet?data=${
-      encodeURIComponent(JSON.stringify(data))}&__a=1&fb_dtsg_ag=${encodeURIComponent(fbDtsgAg)}`,
-    type: 'GET',
-    dataType: 'text',
-    error: () => {
-      callback(true);
-    },
-    success: (result) => {
-      const myRegexp = /(?="addPhotoFbids")(.*?)(],\[\[)(.*?)(])/g;
-      const match = myRegexp.exec(result);
-      const ids = `[${match[3]}]`;
-      callback(null, JSON.parse(ids));
-    },
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      url: `https://www.facebook.com/ajax/pagelet/generic.php/PhotoViewerInitPagelet?data=${
+        encodeURIComponent(JSON.stringify(data))}&__a=1&fb_dtsg_ag=${encodeURIComponent(fbDtsgAg)}`,
+      type: 'GET',
+      dataType: 'text',
+      error: (err) => {
+        reject(err);
+      },
+      success: (result) => {
+        const myRegexp = /(?="addPhotoFbids")(.*?)(],\[\[)(.*?)(])/g;
+        const match = myRegexp.exec(result);
+        const ids = `[${match[3]}]`;
+        resolve(JSON.parse(ids));
+      },
+    });
   });
 }
 
 
-function getOriginalUrl(id, callback) {
-  $.ajax({
-    url: `https://www.facebook.com/ajax/photos/snowlift/menu/?fbid=${id}`,
-    type: 'POST',
-    data: {
-      __a: '1',
-      fb_dtsg: $('input[name=fb_dtsg]')
-        .val(),
-    },
-    dataType: 'text',
-    error: () => {
-      --workers;
-      callback(true);
-    },
-    success: (data) => {
-      const matched = data.match(/"download_photo","href":"(.*?)"/);
-      let finalResult;
-      if (matched) finalResult = matched[1].replace(/\\/g, '');
-      callback(!finalResult, finalResult);
-    },
+function getOriginalUrl(id) {
+  return new Promise((resolve, reject) => {
+    $.ajax({
+      url: `https://www.facebook.com/ajax/photos/snowlift/menu/?fbid=${id}`,
+      type: 'POST',
+      data: {
+        __a: '1',
+        fb_dtsg: $('input[name=fb_dtsg]')
+          .val(),
+      },
+      dataType: 'text',
+      error: (err) => reject(err),
+      success: (data) => {
+        const matched = data.match(/"download_photo","href":"(.*?)"/);
+        let finalResult;
+        if (matched) finalResult = matched[1].replace(/\\/g, '');
+        resolve(finalResult);
+      },
+    });
   });
 }
 
@@ -192,15 +184,7 @@ function addPhotoId(id, i) {
   if (photosIds.indexOf(id) !== -1) {
     return;
   }
-
   photosIds.push(id);
-  workers++;
-  getOriginalUrl(id, (err, url) => {
-    workers--;
-    urls[i] = url;
-    if (doneListener && !workers) {
-      doneListener();
-      doneListener = null;
-    }
-  });
+  getUrlPromises.push(getOriginalUrl(id)
+    .then(url => urls[i] = url));
 }
