@@ -1,23 +1,10 @@
 const webpack = require('webpack');
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 const WriteFilePlugin = require('write-file-webpack-plugin');
-
-const isProduction = process.env.NODE_ENV === 'production';
-
 
 const config = {
   entry: {
-    vendor: [
-      'vue',
-      'jquery',
-      'jszip',
-      'pdfmake/build/pdfmake.min.js',
-      './app/src/vfs_fonts.js',
-      'sanitize-filename',
-      'file-saver',
-    ],
     content: [
       './app/src/content.js',
     ],
@@ -29,7 +16,6 @@ const config = {
       './app/src/test.js',
     ],
   },
-
   output: {
     path: path.resolve(__dirname, 'app/build'),
     filename: '[name].js',
@@ -54,7 +40,6 @@ const config = {
         test: /\.pug$/,
         loader: 'pug-loader',
       },
-
     ],
   },
   plugins: [
@@ -98,7 +83,5 @@ const config = {
     ignored: /node_modules/,
   },
 };
-
-
 
 module.exports = config;
