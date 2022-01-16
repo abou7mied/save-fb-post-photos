@@ -2,6 +2,7 @@ const webpack = require('webpack');
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const WriteFilePlugin = require('write-file-webpack-plugin');
+const WebpackBuildNotifierPlugin = require('webpack-build-notifier');
 
 const config = {
   entry: {
@@ -63,7 +64,11 @@ const config = {
         NODE_ENV: '"production"',
       },
     }),
-
+    new WebpackBuildNotifierPlugin({
+      title: 'Done',
+      // logo: path.resolve("./img/favicon.png"),
+      suppressSuccess: false, // don't spam success notifications
+    }),
   ],
   resolve: {
     extensions: ['.js', '.vue'],
