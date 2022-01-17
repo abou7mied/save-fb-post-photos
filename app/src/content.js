@@ -107,7 +107,7 @@ function download({
 }
 
 function detectTimeNodes() {
-  const timeNode = $('[title*=\'Shared with\']');
+  const timeNode = $('[title*=\'Shared with\'],[title*=\'تمت المشاركة مع\']');
   timeNode.each((i, x) => {
     const timeWrapper = $(x).closest('div');
     const postWrapper = timeWrapper.parents().eq(4);
