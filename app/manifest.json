@@ -22,12 +22,6 @@
       ]
     }
   ],
-  "background": {
-    "scripts": [
-      "build/background.js"
-    ],
-    "persistent": true
-  },
   "permissions": [
     "webRequest",
     "downloads",

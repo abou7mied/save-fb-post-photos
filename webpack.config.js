@@ -9,10 +9,6 @@ const config = {
     content: [
       './app/src/content.js',
     ],
-    background: [
-      'jquery',
-      './app/src/background.js',
-    ],
     test: [
       './app/src/test.js',
     ],
