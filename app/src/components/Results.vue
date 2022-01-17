@@ -17,9 +17,9 @@
               div
                 input#filename(type="text", v-model="filename")
             div
-              div
-                input(id="add-post-link", type="checkbox", v-model="addLinkEnabled")
-                label(for="add-post-link") Add The Post Link
+              //div
+              //  input(id="add-post-link", type="checkbox", v-model="addLinkEnabled")
+              //  label(for="add-post-link") Add The Post Link
               div
                 input(id="add-text", type="checkbox", v-model="addTextEnabled")
                 label(for="add-text") Add The Post Caption
@@ -326,7 +326,7 @@
       return {
         filename: '',
         addTextEnabled: false,
-        addLinkEnabled: true,
+        addLinkEnabled: false,
         fillPhotos: false,
         text: '',
         textAtRight: '',

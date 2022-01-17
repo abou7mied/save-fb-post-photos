@@ -24,8 +24,6 @@ function init() {
 
   loadScriptAndExtractDocId();
 
-  console.log('dtsg', dtsg);
-
   setInterval(() => {
     if (prevScrollHeight !== document.documentElement.scrollHeight) {
       prevScrollHeight = document.documentElement.scrollHeight;
@@ -52,11 +50,11 @@ function parsePhotoUrlParams(search) {
 }
 
 function download({
-                    galleryWrapperNode,
-                    text,
-                    postLink,
-                    textAtRight,
-                  }) {
+  galleryWrapperNode,
+  text,
+  postLink,
+  textAtRight,
+}) {
   clear();
   app.init({
     text,
@@ -64,7 +62,6 @@ function download({
     postLink: `https://www.facebook.com${postLink}`,
   });
 
-  // const a = galleryWrapperNode.find('a[rel=theater]');
   const a = galleryWrapperNode.find('a[role="link"]');
 
   let mapped = a.toArray()
@@ -75,12 +72,10 @@ function download({
         return paths[paths.length - 2];
       }
       const photoUrlParams = parsePhotoUrlParams(item.search);
-      console.log('photoUrlParams', photoUrlParams);
       photoSetId = photoUrlParams.set;
       return photoUrlParams.fbid;
     });
 
-  console.log('mapped', mapped);
   getUrlsOf(mapped);
 
   async.series([
@@ -112,76 +107,62 @@ function download({
 }
 
 function detectTimeNodes() {
-  // The time Node e.g. "2h"
-  const timeNode = document.querySelectorAll('span.j1lvzwm4.stjgntxs.ni8dbmo4.q9uorilb.gpro0wi8');
-  console.log('timeNode', timeNode);
-  timeNode.forEach((node) => {
-    const closest = $(node)
-      .closest('.j83agx80.l9j0dhe7.k4urcfbm');
+  const timeNode = $('[title*=\'Shared with\']');
+  timeNode.each((i, x) => {
+    const timeWrapper = $(x).closest('div');
+    const postWrapper = timeWrapper.parents().eq(4);
 
-    console.log('closest', closest);
+    let firstImageNode;
 
-    const textNode = closest.find('.d2edcug0.hpfvmrgz.qv66sw1b.c1et5uql.b0tq1wua.a8c37x1j.keod5gw0.nxhoafnm.aigsh9s9.d9wwppkn.fe6kdd0r.mau55g9w.c8b282yb.hrzyx87i.jq4qci2q.a3bd9o3v.b1v8xokw.oo9gr5id.hzawbc8m')[0];
-    console.log('textNode', textNode);
+    const extractCorrectImage = (items) => {
+      if (items.length && !$(items[0]).closest('li').length) {
+        firstImageNode = items[0];
+      }
+      return firstImageNode;
+    };
 
-    if (!textNode) {
+    const photoA = postWrapper.find('a[href*=\'https://www.facebook.com/photo/\']');
+    const photoB = postWrapper.find('a[href*=\'/photos/\']');
+
+    extractCorrectImage(photoA);
+    if (!firstImageNode) {
+      extractCorrectImage(photoB);
+    }
+
+    if (!firstImageNode) {
       return;
     }
 
+    const galleryWrapperNode = $(firstImageNode).parents().eq(1);
+    const textNode = postWrapper.find('[data-ad-comet-preview="message"]')[0];
     const text = textNode && (textNode.innerText || textNode.textContent);
 
-    // const textAtRight = closest.find('.userContent p')
-    //   .eq(0)
-    //   .css('text-align') === 'right';
-    const textAtRight = false;
+    const textAtRight = false; // TODO: to be implemented
+    const postLink = ''; // TODO: to be implemented
 
-    const galleryWrapperNode = $($(textNode.closest('.ecm0bbzt.hv4rvrfc.ihqw7lf3.dati1w0a'))
-      .parent())
-      .next();
+    const aNodeParent = $('<span class="download"></span>');
+    const aNode = $('<a href=\'#\'>Download</a>');
+    aNodeParent.append(' ');
+    aNodeParent.append(aNode);
 
-    const image = galleryWrapperNode.find('img');
-    // const galleryWrapperNode = closest.find('.rq0escxv.l9j0dhe7.du4w35lb.j83agx80.g5gj957u.rj1gh0hx.buofh1pr.hpfvmrgz.i1fnvgqd.gs1a9yip.owycx6da.btwxx1t3.jb3vyjys');
-
-    console.log('galleryWrapperNode', galleryWrapperNode);
-
-    const postLink = $(node)
-      .closest('a')
-      .attr('href');
-
-    console.log('node', $(node));
-    console.log('link', $(node)
-      .closest('a'));
-    console.log('link', $(node)
-      .closest('a')
-      .attr('href'));
-
-    // if (closest && galleryWrapperNode.length) {
-    if (closest && image.length) {
-      const aNodeParent = $('<span class="download"></span>');
-      const aNode = $('<a>Download</a>');
-      aNodeParent.append(' ');
-      aNodeParent.append(aNode);
-      aNodeParent.click(() => download({
-        galleryWrapperNode,
-        text,
-        postLink,
-        textAtRight,
-      }));
-      const targetToAddButton = $($(node)
-        .closest('a')
-        .parent());
-      targetToAddButton
-        .find('.download')
-        .remove();
-      targetToAddButton
-        .append(aNodeParent);
-    }
+    aNodeParent.click(() => download({
+      galleryWrapperNode,
+      text,
+      postLink,
+      textAtRight,
+    }));
+    $(timeWrapper)
+      .find('.download')
+      .remove();
+    $(timeWrapper)
+      .find('span:eq(0)')
+      .append(aNodeParent);
   });
 }
 
 init();
 
-async function getNextOf(id, set) {
+async function getNextOf(id) {
   const results = await getPhotoData({
     fb_dtsg: dtsg,
     docId,
@@ -199,7 +180,6 @@ async function getOriginalUrl(id) {
     photoId: id,
     photoSetId,
   });
-  console.log('getPhotoData results', results);
   return results.image.uri;
 }
 
@@ -224,7 +204,6 @@ function loadScriptAndExtractDocId() {
       const match = response.match(/CometPhotoRootContentQuery_facebookRelayOperation.*?e\.exports="(.*?)"/i);
       if (match) {
         docId = match[1];
-        console.log('docId', docId);
       }
     });
 }
