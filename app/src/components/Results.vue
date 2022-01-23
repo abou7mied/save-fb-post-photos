@@ -66,465 +66,464 @@
 
 <style scoped lang="scss">
 
-  #results {
-    z-index: 20000;
-    position: fixed;
+#results {
+  z-index: 20000;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+
+  .overall {
+    position: absolute;
     left: 0;
     right: 0;
     top: 0;
     bottom: 0;
+    background: #000;
+    opacity: 0.3;
+  }
+
+  .wrapper {
+    box-shadow: 0 1px 10px #161616;
+    padding: 0;
+    margin: 50px;
+    border-radius: 10px;
+    background-color: #eeeeee;
     overflow: hidden;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
 
-    .overall {
+    .scroll-view {
+      overflow-y: scroll;
       position: absolute;
       left: 0;
       right: 0;
       top: 0;
-      bottom: 0;
-      background: #000;
-      opacity: 0.3;
+      bottom: 30px;
     }
 
-    .wrapper {
-      box-shadow: 0 1px 10px #161616;
-      padding: 0;
-      margin: 50px;
-      border-radius: 10px;
-      background-color: #eeeeee;
-      overflow: hidden;
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 0;
+  }
 
-      .scroll-view {
-        overflow-y: scroll;
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 0;
-        bottom: 30px;
+  .developed-by {
+    position: absolute;
+    font-size: 10px;
+    font-style: italic;
+    bottom: 5px;
+    left: 10px;
+
+    svg {
+      margin: 0 2px;
+    }
+  }
+
+  .buttons {
+    background-color: #fff;
+    padding: 10px 20px 13px;
+    display: flex;
+    justify-content: space-between;
+
+    .left-side {
+      position: relative;
+
+      * {
+        vertical-align: middle;
       }
 
-    }
-
-    .developed-by {
-      position: absolute;
-      font-size: 10px;
-      font-style: italic;
-      bottom: 5px;
-      left: 10px;
-
-      svg {
-        margin: 0 2px;
-      }
-    }
-
-    .buttons {
-      background-color: #fff;
-      padding: 10px 20px 13px;
-      display: flex;
-      justify-content: space-between;
-
-      .left-side {
-        position: relative;
-
-        * {
-          vertical-align: middle;
-        }
-
-        label {
-          font-size: 12px;
-        }
-
-        > div {
-          display: inline-block;
-        }
-
+      label {
+        font-size: 12px;
       }
 
-      .right-side {
-        position: relative;
-
-        .progress {
-          position: absolute;
-          right: 0;
-          bottom: -8px;
-          font-size: 13px;
-        }
-      }
-    }
-
-    input, textarea {
-      border: 1px solid #345fff;
-    }
-
-    #filename {
-      width: 200px;
-    }
-
-    input[type=text], button, textarea {
-      padding: 8px 15px;
-      border-radius: 30px;
-      font-size: 16px;
-      margin: 10px 2px;
-    }
-
-    textarea {
-      border-radius: 5px;
-      margin: 0 10px;
-      font-size: 12px;
-      padding: 8px;
-      position: absolute;
-      left: 100%;
-      width: 200px;
-      top: 0;
-    }
-
-    button {
-      border: none;
-      color: white;
-      background: #345fff;
-      cursor: pointer;
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: default;
-      }
-
-      &.close {
-        background-color: #d0000d;
-      }
-    }
-
-    .images {
-      margin: 15px 0;
-
-      ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        text-align: center;
-      }
-
-      li {
-        margin: 5px;
+      > div {
         display: inline-block;
-        background: #fff;
-        padding: 10px;
-        position: relative;
+      }
 
-        &.ignored {
-          opacity: 0.5;
+    }
+
+    .right-side {
+      position: relative;
+
+      .progress {
+        position: absolute;
+        right: 0;
+        bottom: -8px;
+        font-size: 13px;
+      }
+    }
+  }
+
+  input, textarea {
+    border: 1px solid #345fff;
+  }
+
+  #filename {
+    width: 200px;
+  }
+
+  input[type=text], button, textarea {
+    padding: 8px 15px;
+    border-radius: 30px;
+    font-size: 16px;
+    margin: 10px 2px;
+  }
+
+  textarea {
+    border-radius: 5px;
+    margin: 0 10px;
+    font-size: 12px;
+    padding: 8px;
+    position: absolute;
+    left: 100%;
+    width: 200px;
+    top: 0;
+  }
+
+  button {
+    border: none;
+    color: white;
+    background: #345fff;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    &.close {
+      background-color: #d0000d;
+    }
+  }
+
+  .images {
+    margin: 15px 0;
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      text-align: center;
+    }
+
+    li {
+      margin: 5px;
+      display: inline-block;
+      background: #fff;
+      padding: 10px;
+      position: relative;
+
+      &.ignored {
+        opacity: 0.5;
+      }
+
+      .org-order {
+        cursor: pointer;
+        width: 1em;
+        height: 1em;
+        position: absolute;
+        line-height: 1em;
+        font-size: 1em;
+        top: 0;
+        right: 10px;
+        padding: 2px;
+        border-radius: 50%;
+        z-index: 30;
+        background-color: #2e305b;
+        color: white;
+
+        span {
+          font-size: 12px;
+          line-height: 12px;
         }
 
-        .org-order {
-          cursor: pointer;
-          width: 1em;
-          height: 1em;
-          position: absolute;
-          line-height: 1em;
-          font-size: 1em;
-          top: 0;
-          right: 10px;
-          padding: 2px;
-          border-radius: 50%;
-          z-index: 30;
-          background-color: #2e305b;
-          color: white;
+        .button {
+          display: none;
+        }
 
-          span {
-            font-size: 12px;
-            line-height: 12px;
-          }
+        &:hover {
+          background-color: #d62424;
 
           .button {
+            display: inline-block;
+          }
+
+          .text {
             display: none;
           }
 
-          &:hover {
-            background-color: #d62424;
-
-            .button {
-              display: inline-block;
-            }
-
-            .text {
-              display: none;
-            }
-
-          }
-
-          &.green:hover {
-            background-color: #007a1a;
-          }
-
-
         }
 
-        .thumb {
-          padding: 0;
-          position: relative;
-          overflow: hidden;
-          max-width: 350px;
+        &.green:hover {
+          background-color: #007a1a;
         }
 
-        .info > span {
-          padding: 0 5px;
-        }
 
-        span {
-          font-size: 14px;
+      }
 
-          &.rotate {
-            color: #1c5fbd;
-            cursor: pointer;
-          }
+      .thumb {
+        padding: 0;
+        position: relative;
+        overflow: hidden;
+        max-width: 350px;
+      }
+
+      .info > span {
+        padding: 0 5px;
+      }
+
+      span {
+        font-size: 14px;
+
+        &.rotate {
+          color: #1c5fbd;
+          cursor: pointer;
         }
       }
     }
-
-    .clear {
-      clear: both;
-    }
   }
+
+  .clear {
+    clear: both;
+  }
+}
 
 </style>
 
 
 <script>
 
-  import async from 'async';
-  import draggable from 'vuedraggable';
-  import pdfMake from 'pdfmake/build/pdfmake.min.js';
-  import { A4 } from 'pdfmake/src/standardPageSizes';
-  import pdfFonts from '../vfs_fonts.js';
-  import fileSaver from 'file-saver';
-  import JSZip from 'jszip';
-  import { base64ArrayBuffer, replaceSpace, rotateBase64Image } from '../helpers';
-  import sanitize from 'sanitize-filename';
+import async from 'async';
+import draggable from 'vuedraggable';
+import pdfMake from 'pdfmake/build/pdfmake.min.js';
+import {A4} from 'pdfmake/src/standardPageSizes';
+import pdfFonts from '../vfs_fonts.js';
+import fileSaver from 'file-saver';
+import JSZip from 'jszip';
+import {base64ArrayBuffer, replaceSpace, rotateBase64Image} from '../helpers';
+import sanitize from 'sanitize-filename';
 
-  pdfMake.vfs = pdfFonts.pdfMake.vfs;
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-  pdfMake.fonts = {
-    defaultFont: {
-      normal: 'font.ttf',
-      bold: 'font.ttf',
-      italics: 'font.ttf',
-      bolditalics: 'font.ttf'
-    },
-  };
+pdfMake.fonts = {
+  defaultFont: {
+    normal: 'font.ttf',
+    bold: 'font.ttf',
+    italics: 'font.ttf',
+    bolditalics: 'font.ttf'
+  },
+};
 
 
-  export default {
-    name: 'results',
-    components: {
-      draggable,
-    },
-    data() {
-      return {
-        filename: '',
-        addTextEnabled: false,
-        addLinkEnabled: true,
-        fillPhotos: false,
-        text: '',
-        textAtRight: '',
-        postLink: '',
-        pageBreak: true,
-        visible: false,
-        preparing: false,
-        workingOn: -1,
-        images: [],
-        hidePreview: false,
-        DISABLE_PREVIEW_THRESHOLD: 50,
-      };
-    },
-    computed: {
-      working() {
-        if (this.workingOn === -1) {
-          return;
-        }
-        return `Processing: ${this.workingOn}/${this.images.length}`;
-      },
-      finalFileName() {
-        return sanitize((this.filename || document.title).replace(/\./g, ''));
+export default {
+  name: 'results',
+  components: {
+    draggable,
+  },
+  data() {
+    return {
+      filename: '',
+      addTextEnabled: true,
+      addLinkEnabled: true,
+      fillPhotos: false,
+      text: '',
+      textAtRight: '',
+      postLink: '',
+      pageBreak: true,
+      visible: false,
+      preparing: false,
+      workingOn: -1,
+      images: [],
+      hidePreview: false,
+      DISABLE_PREVIEW_THRESHOLD: 50,
+    };
+  },
+  computed: {
+    working() {
+      if (this.workingOn === -1) {
+        return;
       }
+      return `Processing: ${this.workingOn}/${this.images.length}`;
     },
-    methods: {
-      init({ text, postLink, textAtRight }) {
-        this.visible = true;
-        this.preparing = true;
-        this.images = [];
-        this.text = text.trim() ? text.trim() : document.title;
-        this.textAtRight = textAtRight;
-        this.postLink = postLink || '';
-        this.filename = this.text.split(/\s+/g)
+    finalFileName() {
+      return sanitize((this.filename || document.title).replace(/\./g, ''));
+    }
+  },
+  methods: {
+    init({text, postLink, textAtRight}) {
+      this.visible = true;
+      this.preparing = true;
+      this.images = [];
+      this.text = text && text.trim() ? text.trim() : document.title;
+      this.textAtRight = textAtRight;
+      this.postLink = postLink || '';
+      this.filename = this.text.split(/\s+/g)
           .slice(0, 10)
           .join(' ');
-        this.addTextEnabled = !!this.text;
-      },
-      getImages(callback) {
-        this.workingOn = 1;
-        async.map(this.images.filter(image => !image.ignored), (item, next) => {
-          async.waterfall([
-            (next) => {
-              console.log('item.url', item.url);
-              $.ajax({
-                url: item.url,
-                type: 'GET',
-                dataType: 'binary',
-                responseType: 'arraybuffer',
-                processData: false,
-                success: (result) => next(null, base64ArrayBuffer(result)),
-              });
-            },
-            (base64, next) => {
-              if (this.workingOn < this.images.length) {
-                this.workingOn++;
-              }
-              base64 = 'data:image/jpeg;base64,' + base64;
-              if (item.degree > 0) {
-                rotateBase64Image(base64, item.degree, newBase64 => next(null, newBase64));
-              } else {
-                next(null, base64);
-              }
-            },
-            (base64, next) => {
-              const i = new Image();
-              i.onload = () => {
-                const calculateImageData = this.calculateImageData(i.width, i.height);
-                next(null, Object.assign(calculateImageData, { data: base64 }));
-              };
-              i.src = base64;
+      this.addTextEnabled = !!this.text;
+    },
+    getImages(callback) {
+      this.workingOn = 1;
+      async.map(this.images.filter(image => !image.ignored), (item, next) => {
+        async.waterfall([
+          (next) => {
+            $.ajax({
+              url: item.url,
+              type: 'GET',
+              dataType: 'binary',
+              responseType: 'arraybuffer',
+              processData: false,
+              success: (result) => next(null, base64ArrayBuffer(result)),
+            });
+          },
+          (base64, next) => {
+            if (this.workingOn < this.images.length) {
+              this.workingOn++;
             }
-          ], (err, base64) => next(null, base64));
-
-        }, (err, results) => {
-          this.workingOn = -1;
-          callback(err, results);
-        });
-
-      },
-      calculateImageData(width, height) {
-        const results = {
-          width,
-          height
-        };
-        const widthScale = A4[0] / width;
-        const heightDiff = A4[1] / height;
-        const matchWidth = this.fillPhotos ? widthScale > heightDiff : widthScale < heightDiff;
-        if (matchWidth) {
-          results.width = A4[0];
-          const scale = results.width / width;
-          results.height = height * scale;
-        } else {
-          results.height = A4[1];
-          const scale = results.height / height;
-          results.width = width * scale;
-        }
-        return Object.assign(results, {
-          margin: [
-            (A4[0] - results.width) / 2,
-            (A4[1] - results.height) / 2,
-          ]
-        });
-      },
-      savePDF() {
-        let mapped = [];
-        const text = [];
-        if (this.addTextEnabled && this.text) {
-          text.push({
-            text: replaceSpace(this.text) + '\n',
-            alignment: this.textAtRight ? 'right' : 'left',
-          });
-        }
-        if (this.addLinkEnabled) {
-          text.push({
-            text: 'Post Link',
-            link: this.postLink,
-            decoration: 'underline',
-            fontSize: 15,
-            color: '#0366d6'
-          });
-        }
-        if (text.length) {
-          mapped.push({
-            text: text,
-            margin: [40, 40],
-            pageBreak: 'after'
-          });
-        }
-
-        this.getImages((err, results) => {
-          mapped = mapped.concat(results.map((item, i) => ({
-            ...item,
-            image: item.data,
-            pageBreak: i !== results.length - 1 && 'after',
-          })));
-          pdfMake.createPdf({
-            pageSize: 'A4',
-            pageMargins: [0, 0, 0, 0],
-            defaultStyle: {
-              font: 'defaultFont'
-            },
-            content: mapped,
-          })
-            .download(this.finalFileName);
-        });
-
-      },
-      saveZIP() {
-
-        this.getImages((err, results) => {
-          let zip = new JSZip();
-
-          let text = this.addTextEnabled && this.text;
-          if (text || this.addLinkEnabled) {
-            if (this.addLinkEnabled) {
-              text = (text || '') + '\n\nLink:\n' + this.postLink;
+            base64 = 'data:image/jpeg;base64,' + base64;
+            if (item.degree > 0) {
+              rotateBase64Image(base64, item.degree, newBase64 => next(null, newBase64));
+            } else {
+              next(null, base64);
             }
-            zip.file('Caption.txt', text);
+          },
+          (base64, next) => {
+            const i = new Image();
+            i.onload = () => {
+              const calculateImageData = this.calculateImageData(i.width, i.height);
+              next(null, Object.assign(calculateImageData, {data: base64}));
+            };
+            i.src = base64;
           }
-          results.forEach((item, i) => {
-            let { data } = item;
-            let ext = data.indexOf('image/png') !== -1 ? 'png' : 'jpeg';
-            data = data.replace(`data:image/${ext};base64,`, '');
-            zip.file(`${i + 1}.${ext}`, data, { base64: true });
-          });
-          zip.generateAsync({ type: 'blob' })
-            .then(content => fileSaver.saveAs(content, this.finalFileName + '.zip'));
-        });
-      },
-      close() {
-        this.visible = false;
-      },
-      setImages(urls) {
-        this.images = urls.map((url, index) => {
-          return {
-            name: index + 1,
-            ignored: false,
-            degree: 0,
-            url,
-            height: 350,
-          };
-        });
-        this.preparing = false;
-        if (urls.length > this.DISABLE_PREVIEW_THRESHOLD) {
-          this.hidePreview = 1;
-        }
-      },
-      rotate(i, toRight) {
-        let image = this.images[i];
-        image.degree += ((toRight ? 1 : -1) * (90)) + 360;
-        image.degree %= 360;
-        image.width = (image.degree === 90 || image.degree === 270) ? 350 : undefined;
-        image.height = image.width ? $('#image-' + i)
-          .width() : 350;
-      },
-      toggleIgnored(image) {
-        image.ignored = !image.ignored;
+        ], (err, base64) => next(null, base64));
+
+      }, (err, results) => {
+        this.workingOn = -1;
+        callback(err, results);
+      });
+
+    },
+    calculateImageData(width, height) {
+      const results = {
+        width,
+        height
+      };
+      const widthScale = A4[0] / width;
+      const heightDiff = A4[1] / height;
+      const matchWidth = this.fillPhotos ? widthScale > heightDiff : widthScale < heightDiff;
+      if (matchWidth) {
+        results.width = A4[0];
+        const scale = results.width / width;
+        results.height = height * scale;
+      } else {
+        results.height = A4[1];
+        const scale = results.height / height;
+        results.width = width * scale;
       }
+      return Object.assign(results, {
+        margin: [
+          (A4[0] - results.width) / 2,
+          (A4[1] - results.height) / 2,
+        ]
+      });
+    },
+    savePDF() {
+      let mapped = [];
+      const text = [];
+      if (this.addTextEnabled && this.text) {
+        text.push({
+          text: replaceSpace(this.text) + '\n',
+          alignment: this.textAtRight ? 'right' : 'left',
+        });
+      }
+      if (this.addLinkEnabled) {
+        text.push({
+          text: 'Post Link',
+          link: this.postLink,
+          decoration: 'underline',
+          fontSize: 15,
+          color: '#0366d6'
+        });
+      }
+      if (text.length) {
+        mapped.push({
+          text: text,
+          margin: [40, 40],
+          pageBreak: 'after'
+        });
+      }
+
+      this.getImages((err, results) => {
+        mapped = mapped.concat(results.map((item, i) => ({
+          ...item,
+          image: item.data,
+          pageBreak: i !== results.length - 1 && 'after',
+        })));
+        pdfMake.createPdf({
+          pageSize: 'A4',
+          pageMargins: [0, 0, 0, 0],
+          defaultStyle: {
+            font: 'defaultFont'
+          },
+          content: mapped,
+        })
+            .download(this.finalFileName);
+      });
+
+    },
+    saveZIP() {
+
+      this.getImages((err, results) => {
+        let zip = new JSZip();
+
+        let text = this.addTextEnabled && this.text;
+        if (text || this.addLinkEnabled) {
+          if (this.addLinkEnabled) {
+            text = (text || '') + '\n\nLink:\n' + this.postLink;
+          }
+          zip.file('Caption.txt', text);
+        }
+        results.forEach((item, i) => {
+          let {data} = item;
+          let ext = data.indexOf('image/png') !== -1 ? 'png' : 'jpeg';
+          data = data.replace(`data:image/${ext};base64,`, '');
+          zip.file(`${i + 1}.${ext}`, data, {base64: true});
+        });
+        zip.generateAsync({type: 'blob'})
+            .then(content => fileSaver.saveAs(content, this.finalFileName + '.zip'));
+      });
+    },
+    close() {
+      this.visible = false;
+    },
+    setImages(urls) {
+      this.images = urls.map((url, index) => {
+        return {
+          name: index + 1,
+          ignored: false,
+          degree: 0,
+          url,
+          height: 350,
+        };
+      });
+      this.preparing = false;
+      if (urls.length > this.DISABLE_PREVIEW_THRESHOLD) {
+        this.hidePreview = 1;
+      }
+    },
+    rotate(i, toRight) {
+      let image = this.images[i];
+      image.degree += ((toRight ? 1 : -1) * (90)) + 360;
+      image.degree %= 360;
+      image.width = (image.degree === 90 || image.degree === 270) ? 350 : undefined;
+      image.height = image.width ? $('#image-' + i)
+          .width() : 350;
+    },
+    toggleIgnored(image) {
+      image.ignored = !image.ignored;
     }
-  };
+  }
+};
 </script>

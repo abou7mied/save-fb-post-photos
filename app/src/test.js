@@ -1,4 +1,4 @@
-import { app } from './app';
+import app from './app';
 import urls from './mockup/urls.json';
 
 function ready() {

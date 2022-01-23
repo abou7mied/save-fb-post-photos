@@ -2,15 +2,12 @@ const webpack = require('webpack');
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const WriteFilePlugin = require('write-file-webpack-plugin');
+const WebpackBuildNotifierPlugin = require('webpack-build-notifier');
 
 const config = {
   entry: {
     content: [
       './app/src/content.js',
-    ],
-    background: [
-      'jquery',
-      './app/src/background.js',
     ],
     test: [
       './app/src/test.js',
@@ -63,7 +60,11 @@ const config = {
         NODE_ENV: '"production"',
       },
     }),
-
+    new WebpackBuildNotifierPlugin({
+      title: 'Done',
+      // logo: path.resolve("./img/favicon.png"),
+      suppressSuccess: false, // don't spam success notifications
+    }),
   ],
   resolve: {
     extensions: ['.js', '.vue'],
@@ -78,7 +79,7 @@ const config = {
   amd: {
     jQuery: true,
   },
-  devtool: 'source-map',
+  devtool: 'cheap-module-source-map',
   watchOptions: {
     ignored: /node_modules/,
   },

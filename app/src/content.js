@@ -1,10 +1,14 @@
-import { app } from './app';
+import app from './app';
 import async from 'async';
+import getPhotoData from './getPhotoData';
 
 const urls = [];
 const photosIds = [];
 let prevScrollHeight;
 const getUrlPromises = [];
+let docId;
+const dtsg = dtsgMatcher();
+let photoSetId;
 
 function clear() {
   photosIds.splice(0);
@@ -17,6 +21,9 @@ function init() {
     .append(results);
   app.$mount(results[0]);
   clear();
+
+  loadScriptAndExtractDocId();
+
   setInterval(() => {
     if (prevScrollHeight !== document.documentElement.scrollHeight) {
       prevScrollHeight = document.documentElement.scrollHeight;
@@ -31,7 +38,7 @@ function getUrlsOf(array) {
   }
 }
 
-function getJsonFromUrl(search) {
+function parsePhotoUrlParams(search) {
   const query = search.substr(1);
   const result = {};
   query.split('&')
@@ -42,42 +49,50 @@ function getJsonFromUrl(search) {
   return result;
 }
 
-function download({ node, text, postLink, textAtRight }) {
+function download({
+  galleryWrapperNode,
+  text,
+  postLink,
+  textAtRight,
+}) {
   clear();
   app.init({
     text,
     textAtRight,
-    postLink: `https://www.facebook.com${postLink}`,
+    postLink,
   });
 
-  const a = node.find('a[rel=theater]');
-  let set;
+  const a = galleryWrapperNode.find('a[role="link"]');
+
   let mapped = a.toArray()
     .map((item) => {
       if (item.href.indexOf('/posts/') !== -1 || item.href.indexOf('/photos/') !== -1) {
         const paths = item.href.split('/');
-        set = paths[paths.length - 3];
+        photoSetId = paths[paths.length - 3];
         return paths[paths.length - 2];
       }
-      const json = getJsonFromUrl(item.search);
-      set = json.set;
-      return json.fbid;
+      const photoUrlParams = parsePhotoUrlParams(item.search);
+      photoSetId = photoUrlParams.set;
+      return photoUrlParams.fbid;
     });
 
   getUrlsOf(mapped);
+
   async.series([
     (next) => {
       async.doDuring(
         async (callback) => {
-          const newIds = await getNextOf(mapped[mapped.length - 1], set);
-          const filtered = newIds.filter(n => mapped.indexOf(n) !== -1);
-          mapped = mapped.concat(newIds);
-          mapped = mapped.filter((item, pos) => mapped.indexOf(item) === pos);
+          const newId = await getNextOf(mapped[mapped.length - 1], photoSetId);
+          const reachedTheEnd = !newId || mapped.find(n => n.toString() === newId);
+          if (newId) {
+            mapped.push(newId);
+            mapped = mapped.filter((item, pos) => mapped.indexOf(item) === pos);
+          }
           getUrlsOf(mapped);
-          callback(null, filtered);
+          callback(null, reachedTheEnd);
         },
-        (filtered, callback) => {
-          callback(null, !filtered.length);
+        (reachedTheEnd, callback) => {
+          callback(null, !reachedTheEnd);
         },
         () => {
           next();
@@ -92,90 +107,95 @@ function download({ node, text, postLink, textAtRight }) {
 }
 
 function detectTimeNodes() {
-  const timeNode = $('._5u5j .fsm.fwn.fcg');
-  timeNode.each((i, x) => {
-    const closest = $(x)
-      .closest('._1dwg');
-    const textNode = closest.find('.userContent')[0];
+  let timeNodes = $('[title*=\'Shared with\'],[title*=\'تمت المشاركة مع\']');
+  if (!timeNodes.length) {
+    timeNodes = $('span span span svg');
+  }
+
+  timeNodes.each((i, x) => {
+    const timeWrapper = $(x).closest('div');
+
+    // Skip processing if button already added
+    if ($(timeWrapper).find('.download').length) {
+      return;
+    }
+
+    const postWrapper = timeWrapper.parents().eq(4);
+
+    let firstImageNode;
+
+    const extractCorrectImage = (items) => {
+      if (items.length && !$(items[0]).closest('li').length) {
+        firstImageNode = items[0];
+      }
+      return firstImageNode;
+    };
+
+    const photoA = postWrapper.find('a[href*=\'https://www.facebook.com/photo/\']');
+    const photoB = postWrapper.find('a[href*=\'/photos/\']');
+
+    extractCorrectImage(photoA);
+    if (!firstImageNode) {
+      extractCorrectImage(photoB);
+    }
+
+    if (!firstImageNode) {
+      return;
+    }
+
+    const galleryWrapperNode = $(firstImageNode).parents().eq(1);
+    const textNode = postWrapper.find('[data-ad-comet-preview="message"]')[0];
     const text = textNode && (textNode.innerText || textNode.textContent);
-    const textAtRight = closest.find('.userContent p')
-      .eq(0)
-      .css('text-align') === 'right';
-    const _2a2q = closest.find('._2a2q');
-    const postLink = closest.find('a._5pcq')
-      .attr('href');
-    if (closest && _2a2q.length) {
-      const aNodeParent = $('<span class="download"></span>');
-      const aNode = $('<a href=\'#\'>Download</a>');
-      aNodeParent.append(' ');
-      aNodeParent.append(aNode);
-      aNodeParent.click(() => download({
-        node: _2a2q,
+
+    const textAtRight = false; // TODO: to be implemented
+
+    const aNodeParent = $('<span class="download"></span>');
+    const aNode = $('<a>Download</a>');
+    aNodeParent.append(' ');
+    aNodeParent.append(aNode);
+    const postLinkNode = $(timeWrapper)
+      .find('a:last');
+
+    aNodeParent.click((e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const postLink = postLinkNode.attr('href'); // TODO: to be implemented
+      download({
+        galleryWrapperNode,
         text,
         postLink,
         textAtRight,
-      }));
-      $(x)
-        .parent()
-        .find('.download')
-        .remove();
-      $(x)
-        .parent()
-        .append(aNodeParent);
-    }
+      });
+    });
+    $(timeWrapper)
+      .find('.download')
+      .remove();
+    postLinkNode
+      .append(aNodeParent);
   });
 }
 
 init();
 
-async function getNextOf(id, set) {
-  const data = { fbid: `${id}` };
-  if (set) {
-    data.set = set;
-  }
-  const fbDtsgAg = $('html')
-    .html()
-    .match(/async_get_token"\s*:\s*"(.*?)"/)[1];
-  return new Promise((resolve, reject) => {
-    $.ajax({
-      url: `https://www.facebook.com/ajax/pagelet/generic.php/PhotoViewerInitPagelet?data=${
-        encodeURIComponent(JSON.stringify(data))}&__a=1&fb_dtsg_ag=${encodeURIComponent(fbDtsgAg)}`,
-      type: 'GET',
-      dataType: 'text',
-      error: (err) => {
-        reject(err);
-      },
-      success: (result) => {
-        const myRegexp = /(?="addPhotoFbids")(.*?)(],\[\[)(.*?)(])/g;
-        const match = myRegexp.exec(result);
-        const ids = `[${match[3]}]`;
-        resolve(JSON.parse(ids));
-      },
-    });
+async function getNextOf(id) {
+  const results = await getPhotoData({
+    fb_dtsg: dtsg,
+    docId,
+    photoId: id,
+    photoSetId,
   });
+  return results.nextImageId;
 }
 
 
-function getOriginalUrl(id) {
-  return new Promise((resolve, reject) => {
-    $.ajax({
-      url: `https://www.facebook.com/ajax/photos/snowlift/menu/?fbid=${id}`,
-      type: 'POST',
-      data: {
-        __a: '1',
-        fb_dtsg: $('input[name=fb_dtsg]')
-          .val(),
-      },
-      dataType: 'text',
-      error: (err) => reject(err),
-      success: (data) => {
-        const matched = data.match(/"download_photo","href":"(.*?)"/);
-        let finalResult;
-        if (matched) finalResult = matched[1].replace(/\\/g, '');
-        resolve(finalResult);
-      },
-    });
+async function getOriginalUrl(id) {
+  const results = await getPhotoData({
+    fb_dtsg: dtsg,
+    docId,
+    photoId: id,
+    photoSetId,
   });
+  return results.image.uri;
 }
 
 
@@ -187,4 +207,31 @@ function addPhotoId(id, i) {
   photosIds.push(id);
   getUrlPromises.push(getOriginalUrl(id)
     .then(url => urls[i] = url));
+}
+
+function loadScriptAndExtractDocId() {
+  $.ajax({
+    url: 'https://static.xx.fbcdn.net/rsrc.php/v3/yi/r/qZ-coEUYuSR.js',
+    method: 'GET',
+    dataType: 'text',
+  })
+    .done((response) => {
+      const match = response.match(/CometPhotoRootContentQuery_facebookRelayOperation.*?e\.exports="(.*?)"/i);
+      if (match) {
+        docId = match[1];
+      }
+    });
+}
+
+
+function findScriptTextIncludes(matcher) {
+  return $('script')
+    .toArray()
+    .find(script => matcher(script.text)).text;
+}
+
+function dtsgMatcher() {
+  const scriptText = findScriptTextIncludes(text => text.match('DTSGInitialData'));
+  const match = scriptText.match(/DTSGInitialData.*?"token":"(.*?)"/i);
+  return match[1];
 }
