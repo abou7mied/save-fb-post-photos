@@ -1,8 +1,6 @@
 import Vue from 'vue';
 import App from './components/Results.vue';
 
-const app = new Vue({
+export default new Vue({
   ...App,
 });
-
-export { app };

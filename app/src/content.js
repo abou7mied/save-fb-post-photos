@@ -1,4 +1,4 @@
-import { app } from './app';
+import app from './app';
 import async from 'async';
 import getPhotoData from './getPhotoData';
 
