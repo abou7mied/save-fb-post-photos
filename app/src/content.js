@@ -59,7 +59,7 @@ function download({
   app.init({
     text,
     textAtRight,
-    postLink: `https://www.facebook.com${postLink}`,
+    postLink,
   });
 
   const a = galleryWrapperNode.find('a[role="link"]');
@@ -138,24 +138,30 @@ function detectTimeNodes() {
     const text = textNode && (textNode.innerText || textNode.textContent);
 
     const textAtRight = false; // TODO: to be implemented
-    const postLink = ''; // TODO: to be implemented
 
     const aNodeParent = $('<span class="download"></span>');
-    const aNode = $('<a href=\'#\'>Download</a>');
+    const aNode = $('<a>Download</a>');
     aNodeParent.append(' ');
     aNodeParent.append(aNode);
+    const postLinkNode = $(timeWrapper)
+      .find('a:last');
 
-    aNodeParent.click(() => download({
-      galleryWrapperNode,
-      text,
-      postLink,
-      textAtRight,
-    }));
+    aNodeParent.click((e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const postLink = postLinkNode.attr('href'); // TODO: to be implemented
+      console.log('postLink', postLink);
+      download({
+        galleryWrapperNode,
+        text,
+        postLink,
+        textAtRight,
+      });
+    });
     $(timeWrapper)
       .find('.download')
       .remove();
-    $(timeWrapper)
-      .find('span:eq(0)')
+    postLinkNode
       .append(aNodeParent);
   });
 }
