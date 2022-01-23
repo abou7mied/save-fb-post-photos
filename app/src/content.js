@@ -110,6 +110,12 @@ function detectTimeNodes() {
   const timeNode = $('[title*=\'Shared with\'],[title*=\'تمت المشاركة مع\']');
   timeNode.each((i, x) => {
     const timeWrapper = $(x).closest('div');
+
+    // Skip processing if button already added
+    if ($(timeWrapper).find('.download').length) {
+      return;
+    }
+
     const postWrapper = timeWrapper.parents().eq(4);
 
     let firstImageNode;
