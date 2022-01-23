@@ -21,8 +21,5 @@
         "build/content.js"
       ]
     }
-  ],
-  "host_permissions": [
-    "https://www.facebook.com/"
   ]
 }
