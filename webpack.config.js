@@ -79,7 +79,7 @@ const config = {
   amd: {
     jQuery: true,
   },
-  devtool: 'source-map',
+  devtool: 'cheap-module-source-map',
   watchOptions: {
     ignored: /node_modules/,
   },
