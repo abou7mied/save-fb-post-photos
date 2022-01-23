@@ -369,7 +369,6 @@ export default {
       async.map(this.images.filter(image => !image.ignored), (item, next) => {
         async.waterfall([
           (next) => {
-            console.log('item.url', item.url);
             $.ajax({
               url: item.url,
               type: 'GET',

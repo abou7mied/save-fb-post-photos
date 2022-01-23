@@ -160,7 +160,6 @@ function detectTimeNodes() {
       e.preventDefault();
       e.stopPropagation();
       const postLink = postLinkNode.attr('href'); // TODO: to be implemented
-      console.log('postLink', postLink);
       download({
         galleryWrapperNode,
         text,
