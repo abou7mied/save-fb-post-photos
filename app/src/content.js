@@ -107,8 +107,12 @@ function download({
 }
 
 function detectTimeNodes() {
-  const timeNode = $('[title*=\'Shared with\'],[title*=\'تمت المشاركة مع\']');
-  timeNode.each((i, x) => {
+  let timeNodes = $('[title*=\'Shared with\'],[title*=\'تمت المشاركة مع\']');
+  if (!timeNodes.length) {
+    timeNodes = $('span span span svg');
+  }
+
+  timeNodes.each((i, x) => {
     const timeWrapper = $(x).closest('div');
 
     // Skip processing if button already added
