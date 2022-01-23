@@ -30,12 +30,13 @@ const config = {
         options: {
           loaders: {
             scss: 'vue-style-loader!css-loader!sass-loader',
+            pug: 'pug-plain-loader',
           },
         },
       },
       {
         test: /\.pug$/,
-        loader: 'pug-loader',
+        loader: 'pug-plain-loader',
       },
     ],
   },
@@ -44,7 +45,7 @@ const config = {
 
     new HtmlWebpackPlugin({
       title: 'Facebook post downloader',
-      template: 'views/index.pug',
+      template: 'views/index.html',
       filename: 'index.html',
       inject: 'head',
       alwaysWriteToDisk: true,
