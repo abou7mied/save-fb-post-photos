@@ -9,6 +9,9 @@ const config = {
     content: [
       './app/src/content.js',
     ],
+    'main-world': [
+      './app/src/main-world.js',
+    ],
     test: [
       './app/src/test.js',
     ],

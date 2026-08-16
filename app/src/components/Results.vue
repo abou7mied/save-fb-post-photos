@@ -302,7 +302,7 @@ import {A4} from 'pdfmake/src/standardPageSizes';
 import pdfFonts from '../vfs_fonts.js';
 import fileSaver from 'file-saver';
 import JSZip from 'jszip';
-import {base64ArrayBuffer, replaceSpace, rotateBase64Image} from '../helpers';
+import {fetchImageBase64, replaceSpace, rotateBase64Image} from '../helpers';
 import sanitize from 'sanitize-filename';
 
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -369,20 +369,14 @@ export default {
       async.map(this.images.filter(image => !image.ignored), (item, next) => {
         async.waterfall([
           (next) => {
-            $.ajax({
-              url: item.url,
-              type: 'GET',
-              dataType: 'binary',
-              responseType: 'arraybuffer',
-              processData: false,
-              success: (result) => next(null, base64ArrayBuffer(result)),
-            });
+            fetchImageBase64(item.url)
+                .then(base64 => next(null, base64))
+                .catch(err => next(err));
           },
           (base64, next) => {
             if (this.workingOn < this.images.length) {
               this.workingOn++;
             }
-            base64 = 'data:image/jpeg;base64,' + base64;
             if (item.degree > 0) {
               rotateBase64Image(base64, item.degree, newBase64 => next(null, newBase64));
             } else {
@@ -401,7 +395,7 @@ export default {
 
       }, (err, results) => {
         this.workingOn = -1;
-        callback(err, results);
+        callback(err, (results || []).filter(Boolean));
       });
 
     },

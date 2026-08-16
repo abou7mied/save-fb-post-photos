@@ -8,8 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "webpack": "webpack-dev-server --watch",
-    "webpack-prod": "cross-env NODE_ENV=production webpack --mode=production",
+    "webpack": "cross-env NODE_OPTIONS=--openssl-legacy-provider webpack --mode=development --watch",
+    "webpack-prod": "cross-env NODE_ENV=production NODE_OPTIONS=--openssl-legacy-provider webpack --mode=production",
     "webpack-dev-server": "webpack-dev-server --config webpack.config.js --hot --watch --colors"
   },
   "author": "Ahmed Sabry",

@@ -3,10 +3,16 @@
   "name": "Save Post Photos as PDF/ZIP",
   "short_name": "Save Post Photos as PDF/ZIP",
   "description": "This extension allows you to save the photos of a facebook post with their high quality as a PDF or a zip file.",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "action": {
     "default_icon": "assets/icon128.png"
   },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "https://*.fbcdn.net/*"
+  ],
   "icons": {
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
@@ -15,11 +21,22 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.facebook.com/*"
+        "https://www.facebook.com/*",
+        "https://web.facebook.com/*"
       ],
       "js": [
         "build/content.js"
       ]
+    },
+    {
+      "matches": [
+        "https://www.facebook.com/*",
+        "https://web.facebook.com/*"
+      ],
+      "js": [
+        "build/main-world.js"
+      ],
+      "world": "MAIN"
     }
   ]
 }

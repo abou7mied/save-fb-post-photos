@@ -143,6 +143,41 @@ function rotateBase64Image(base64data, givenDegrees, callback) {
   };
 }
 
+// Fetches an image and returns it as a data: URL. Goes through the
+// extension's background service worker when available (its host_permissions
+// bypass CDN CORS restrictions); falls back to a direct fetch otherwise.
+function fetchImageBase64(url) {
+  return new Promise((resolve, reject) => {
+    const fallback = () => {
+      fetch(url)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return response.arrayBuffer();
+        })
+        .then(buffer => resolve(`data:image/jpeg;base64,${base64ArrayBuffer(buffer)}`))
+        .catch(reject);
+    };
+
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+      try {
+        chrome.runtime.sendMessage({ type: 'sfpp-fetch-image', url }, (response) => {
+          if (chrome.runtime.lastError || !response || !response.ok) {
+            fallback();
+            return;
+          }
+          resolve(`data:${response.contentType || 'image/jpeg'};base64,${response.base64}`);
+        });
+      } catch (error) {
+        fallback();
+      }
+    } else {
+      fallback();
+    }
+  });
+}
+
 function replaceSpace(text) {
   // return text.replace(/(?=\W) (?=\W)/g, '\u00A0');
   return text.replace(/(\W) (\W)/g, (...args) => {
@@ -150,4 +185,6 @@ function replaceSpace(text) {
   });
 }
 
-export { base64ArrayBuffer, rotateBase64Image, replaceSpace };
+export {
+  base64ArrayBuffer, rotateBase64Image, replaceSpace, fetchImageBase64,
+};

@@ -1,237 +1,215 @@
 import app from './app';
-import async from 'async';
 import getPhotoData from './getPhotoData';
 
-const urls = [];
-const photosIds = [];
-let prevScrollHeight;
-const getUrlPromises = [];
-let docId;
-const dtsg = dtsgMatcher();
-let photoSetId;
+// Photo links keep these URL shapes even as Facebook's markup changes.
+const PHOTO_ANCHOR_SELECTOR = [
+  'a[href*="/photo/?"]',
+  'a[href*="/photo.php?"]',
+  'a[href*="/photos/"]',
+].join(',');
 
-function clear() {
-  photosIds.splice(0);
-  urls.splice(0);
-}
+const POST_MESSAGE_SELECTOR = [
+  '[data-ad-comet-preview="message"]',
+  '[data-ad-preview="message"]',
+  '[data-ad-rendering-role="story_message"]',
+].join(',');
+
+// Walking a media set is capped so a single photo that belongs to a huge
+// album can't trigger hundreds of requests.
+const MAX_SET_WALK = 300;
 
 function init() {
-  const results = $('<div id="results"></div>');
-  $('body')
-    .append(results);
-  app.$mount(results[0]);
-  clear();
+  const results = document.createElement('div');
+  document.body.appendChild(results);
+  app.$mount(results);
 
-  loadScriptAndExtractDocId();
-
-  setInterval(() => {
-    if (prevScrollHeight !== document.documentElement.scrollHeight) {
-      prevScrollHeight = document.documentElement.scrollHeight;
-      detectTimeNodes();
-    }
-  }, 1500);
+  detectPosts();
+  setInterval(detectPosts, 1500);
 }
 
-function getUrlsOf(array) {
-  for (let i = 0; i < array.length; i++) {
-    addPhotoId(array[i], i);
+function parsePhotoAnchor(anchor) {
+  let url;
+  try {
+    url = new URL(anchor.href, window.location.origin);
+  } catch (error) {
+    return null;
+  }
+  const fbid = url.searchParams.get('fbid');
+  if (fbid) {
+    return {
+      photoId: fbid,
+      setToken: url.searchParams.get('set'),
+    };
+  }
+  // Old-style links: /{page}/photos/{set}/{photoId}/
+  const match = url.pathname.match(/\/photos\/([^/]+)\/(\d+)/);
+  if (match) {
+    return {
+      photoId: match[2],
+      setToken: match[1],
+    };
+  }
+  return null;
+}
+
+function isInsideComment(anchor) {
+  const article = anchor.closest('[role="article"]');
+  const label = article && article.getAttribute('aria-label');
+  // Comments are nested articles labelled "Comment by ..." (localized).
+  return !!(label && /comment|تعليق|رد/i.test(label));
+}
+
+function findPostContainer(anchor) {
+  // [data-virtualized] wraps each feed unit in the current UI; aria-posinset
+  // and role=article cover older layouts; role=dialog covers a post opened as
+  // a popup over the feed. role=main is only safe on permalink pages — on the
+  // feed it spans every post at once.
+  const container = anchor.closest('div[aria-posinset]')
+    || anchor.closest('[data-virtualized]')
+    || anchor.closest('[role="article"]')
+    || anchor.closest('[role="dialog"]');
+  if (container) {
+    return container;
+  }
+  if (window.location.pathname !== '/') {
+    return anchor.closest('div[role="main"]');
+  }
+  return null;
+}
+
+function detectPosts() {
+  const anchors = document.querySelectorAll(PHOTO_ANCHOR_SELECTOR);
+  for (let i = 0; i < anchors.length; i++) {
+    const anchor = anchors[i];
+    if (parsePhotoAnchor(anchor) && !isInsideComment(anchor)) {
+      const post = findPostContainer(anchor);
+      if (post && !post.querySelector('.sfpp-download')) {
+        addDownloadButton(post);
+      }
+    }
   }
 }
 
-function parsePhotoUrlParams(search) {
-  const query = search.substr(1);
-  const result = {};
-  query.split('&')
-    .forEach((part) => {
-      const item = part.split('=');
-      result[item[0]] = decodeURIComponent(item[1]);
-    });
-  return result;
+function addDownloadButton(post) {
+  const button = document.createElement('div');
+  button.className = 'sfpp-download';
+  button.textContent = '⇩ Save photos';
+  button.setAttribute('role', 'button');
+  button.style.cssText = [
+    'position:absolute',
+    'top:10px',
+    'right:80px',
+    'z-index:1000',
+    'cursor:pointer',
+    'background:#345fff',
+    'color:#fff',
+    'font-size:13px',
+    'font-weight:bold',
+    'font-family:Arial,sans-serif',
+    'line-height:1',
+    'padding:7px 12px',
+    'border-radius:15px',
+    'box-shadow:0 1px 3px rgba(0,0,0,0.35)',
+    'user-select:none',
+  ].join(';');
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    startDownload(post)
+      .catch((error) => {
+        app.close();
+        window.alert(`Save Post Photos: ${error && error.message ? error.message : error}`);
+      });
+  });
+  if (!post.style.position) {
+    post.style.position = 'relative';
+  }
+  post.appendChild(button);
 }
 
-function download({
-  galleryWrapperNode,
-  text,
-  postLink,
-  textAtRight,
-}) {
-  clear();
+function collectPostPhotos(post) {
+  const anchors = post.querySelectorAll(PHOTO_ANCHOR_SELECTOR);
+  const photos = [];
+  const seen = {};
+  for (let i = 0; i < anchors.length; i++) {
+    const anchor = anchors[i];
+    if (!isInsideComment(anchor)) {
+      const parsed = parsePhotoAnchor(anchor);
+      if (parsed && !seen[parsed.photoId]) {
+        seen[parsed.photoId] = true;
+        photos.push(parsed);
+      }
+    }
+  }
+  return photos;
+}
+
+async function startDownload(post) {
+  const photos = collectPostPhotos(post);
+  if (!photos.length) {
+    throw new Error('No photos found in this post.');
+  }
+
+  const textNode = post.querySelector(POST_MESSAGE_SELECTOR);
+  const text = textNode ? (textNode.innerText || textNode.textContent) : '';
+  const postLinkNode = post.querySelector('a[href*="/posts/"], a[href*="/permalink"], a[href*="story_fbid="]');
+  const postLink = postLinkNode ? postLinkNode.href : window.location.href;
+
   app.init({
     text,
-    textAtRight,
     postLink,
+    textAtRight: false,
   });
 
-  const a = galleryWrapperNode.find('a[role="link"]');
-
-  let mapped = a.toArray()
-    .map((item) => {
-      if (item.href.indexOf('/posts/') !== -1 || item.href.indexOf('/photos/') !== -1) {
-        const paths = item.href.split('/');
-        photoSetId = paths[paths.length - 3];
-        return paths[paths.length - 2];
-      }
-      const photoUrlParams = parsePhotoUrlParams(item.search);
-      photoSetId = photoUrlParams.set;
-      return photoUrlParams.fbid;
-    });
-
-  getUrlsOf(mapped);
-
-  async.series([
-    (next) => {
-      async.doDuring(
-        async (callback) => {
-          const newId = await getNextOf(mapped[mapped.length - 1], photoSetId);
-          const reachedTheEnd = !newId || mapped.find(n => n.toString() === newId);
-          if (newId) {
-            mapped.push(newId);
-            mapped = mapped.filter((item, pos) => mapped.indexOf(item) === pos);
-          }
-          getUrlsOf(mapped);
-          callback(null, reachedTheEnd);
-        },
-        (reachedTheEnd, callback) => {
-          callback(null, !reachedTheEnd);
-        },
-        () => {
-          next();
-        },
-      );
-    },
-    async () => {
-      await Promise.all(getUrlPromises);
-      app.setImages(urls);
-    },
-  ]);
-}
-
-function detectTimeNodes() {
-  let timeNodes = $('[title*=\'Shared with\'],[title*=\'تمت المشاركة مع\']');
-  if (!timeNodes.length) {
-    timeNodes = $('span span span svg');
+  let setToken = null;
+  for (let i = 0; i < photos.length; i++) {
+    if (photos[i].setToken) {
+      setToken = photos[i].setToken;
+      break;
+    }
   }
 
-  timeNodes.each((i, x) => {
-    const timeWrapper = $(x).closest('div');
+  const ids = photos.map(photo => photo.photoId);
 
-    // Skip processing if button already added
-    if ($(timeWrapper).find('.download').length) {
-      return;
-    }
-
-    const postWrapper = timeWrapper.parents().eq(4);
-
-    let firstImageNode;
-
-    const extractCorrectImage = (items) => {
-      if (items.length && !$(items[0]).closest('li').length) {
-        firstImageNode = items[0];
+  // The collage preview only links the first few photos; follow the media
+  // set from the last known photo to discover the rest ("+N more").
+  // Only walk multi-photo sets so a single photo inside a big album doesn't
+  // enumerate the whole album.
+  if (setToken && (ids.length > 1 || setToken.indexOf('pcb.') === 0)) {
+    const seen = new Set(ids);
+    let cursor = ids[ids.length - 1];
+    let steps = 0;
+    while (cursor && steps < MAX_SET_WALK) {
+      steps += 1;
+      let data;
+      try {
+        data = await getPhotoData(cursor, setToken); // eslint-disable-line no-await-in-loop
+      } catch (error) {
+        break;
       }
-      return firstImageNode;
-    };
-
-    const photoA = postWrapper.find('a[href*=\'https://www.facebook.com/photo/\']');
-    const photoB = postWrapper.find('a[href*=\'/photos/\']');
-
-    extractCorrectImage(photoA);
-    if (!firstImageNode) {
-      extractCorrectImage(photoB);
+      if (!data.nextId || seen.has(data.nextId)) {
+        break;
+      }
+      seen.add(data.nextId);
+      ids.push(data.nextId);
+      cursor = data.nextId;
     }
+  }
 
-    if (!firstImageNode) {
-      return;
-    }
+  const urls = [];
+  await Promise.all(ids.map((id, index) => getPhotoData(id, setToken)
+    .then((data) => {
+      urls[index] = data.uri;
+    })
+    .catch(() => {
+      urls[index] = null;
+    })));
 
-    const galleryWrapperNode = $(firstImageNode).parents().eq(1);
-    const textNode = postWrapper.find('[data-ad-comet-preview="message"]')[0];
-    const text = textNode && (textNode.innerText || textNode.textContent);
-
-    const textAtRight = false; // TODO: to be implemented
-
-    const aNodeParent = $('<span class="download"></span>');
-    const aNode = $('<a>Download</a>');
-    aNodeParent.append(' ');
-    aNodeParent.append(aNode);
-    const postLinkNode = $(timeWrapper)
-      .find('a:last');
-
-    aNodeParent.click((e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const postLink = postLinkNode.attr('href'); // TODO: to be implemented
-      download({
-        galleryWrapperNode,
-        text,
-        postLink,
-        textAtRight,
-      });
-    });
-    $(timeWrapper)
-      .find('.download')
-      .remove();
-    postLinkNode
-      .append(aNodeParent);
-  });
+  const finalUrls = urls.filter(Boolean);
+  if (!finalUrls.length) {
+    throw new Error('Could not resolve any photo URLs. Facebook may have changed its page format.');
+  }
+  app.setImages(finalUrls);
 }
 
 init();
-
-async function getNextOf(id) {
-  const results = await getPhotoData({
-    fb_dtsg: dtsg,
-    docId,
-    photoId: id,
-    photoSetId,
-  });
-  return results.nextImageId;
-}
-
-
-async function getOriginalUrl(id) {
-  const results = await getPhotoData({
-    fb_dtsg: dtsg,
-    docId,
-    photoId: id,
-    photoSetId,
-  });
-  return results.image.uri;
-}
-
-
-function addPhotoId(id, i) {
-  id += '';
-  if (photosIds.indexOf(id) !== -1) {
-    return;
-  }
-  photosIds.push(id);
-  getUrlPromises.push(getOriginalUrl(id)
-    .then(url => urls[i] = url));
-}
-
-function loadScriptAndExtractDocId() {
-  $.ajax({
-    url: 'https://static.xx.fbcdn.net/rsrc.php/v3/yi/r/qZ-coEUYuSR.js',
-    method: 'GET',
-    dataType: 'text',
-  })
-    .done((response) => {
-      const match = response.match(/CometPhotoRootContentQuery_facebookRelayOperation.*?e\.exports="(.*?)"/i);
-      if (match) {
-        docId = match[1];
-      }
-    });
-}
-
-
-function findScriptTextIncludes(matcher) {
-  return $('script')
-    .toArray()
-    .find(script => matcher(script.text)).text;
-}
-
-function dtsgMatcher() {
-  const scriptText = findScriptTextIncludes(text => text.match('DTSGInitialData'));
-  const match = scriptText.match(/DTSGInitialData.*?"token":"(.*?)"/i);
-  return match[1];
-}
