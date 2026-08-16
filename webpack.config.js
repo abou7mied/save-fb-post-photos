@@ -1,8 +1,6 @@
 const webpack = require('webpack');
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const WriteFilePlugin = require('write-file-webpack-plugin');
-const WebpackBuildNotifierPlugin = require('webpack-build-notifier');
+const { VueLoaderPlugin } = require('vue-loader');
 
 const config = {
   entry: {
@@ -11,9 +9,6 @@ const config = {
     ],
     'main-world': [
       './app/src/main-world.js',
-    ],
-    test: [
-      './app/src/test.js',
     ],
   },
   output: {
@@ -30,12 +25,36 @@ const config = {
       {
         test: /\.vue$/,
         loader: 'vue-loader',
-        options: {
-          loaders: {
-            scss: 'vue-style-loader!css-loader!sass-loader',
-            pug: 'pug-plain-loader',
+      },
+      {
+        test: /\.scss$/,
+        use: [
+          'vue-style-loader',
+          {
+            loader: 'css-loader',
+            options: {
+              esModule: false,
+            },
           },
-        },
+          {
+            loader: 'sass-loader',
+            options: {
+              implementation: require('sass'),
+            },
+          },
+        ],
+      },
+      {
+        test: /\.css$/,
+        use: [
+          'vue-style-loader',
+          {
+            loader: 'css-loader',
+            options: {
+              esModule: false,
+            },
+          },
+        ],
       },
       {
         test: /\.pug$/,
@@ -44,16 +63,7 @@ const config = {
     ],
   },
   plugins: [
-    new WriteFilePlugin(),
-
-    new HtmlWebpackPlugin({
-      title: 'Facebook post downloader',
-      template: 'views/index.html',
-      filename: 'index.html',
-      inject: 'head',
-      alwaysWriteToDisk: true,
-      excludeChunks: ['content'],
-    }),
+    new VueLoaderPlugin(),
 
     new webpack.ProvidePlugin({
       $: 'jquery',
@@ -63,11 +73,6 @@ const config = {
       'process.env': {
         NODE_ENV: '"production"',
       },
-    }),
-    new WebpackBuildNotifierPlugin({
-      title: 'Done',
-      // logo: path.resolve("./img/favicon.png"),
-      suppressSuccess: false, // don't spam success notifications
     }),
   ],
   resolve: {
