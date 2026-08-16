@@ -365,6 +365,19 @@ export default {
       DISABLE_PREVIEW_THRESHOLD: 50,
     };
   },
+  mounted() {
+    // Capture phase so the modal closes even if Facebook handles Escape first.
+    this.onKeydown = (event) => {
+      if (event.key === 'Escape' && this.visible) {
+        event.stopPropagation();
+        this.close();
+      }
+    };
+    window.addEventListener('keydown', this.onKeydown, true);
+  },
+  beforeDestroy() {
+    window.removeEventListener('keydown', this.onKeydown, true);
+  },
   computed: {
     working() {
       if (this.workingOn === -1) {
