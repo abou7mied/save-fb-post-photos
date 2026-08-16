@@ -9,32 +9,35 @@
         a(href="https://github.com/abou7mied/save-fb-post-photos" target="_blank")
           svg(width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg")
             path(d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12")
+      .sidebar
+        .field
+          label(for="filename") File Name:
+          input#filename(type="text", v-model="filename")
+        .field.checkbox
+          input(id="add-post-link", type="checkbox", v-model="addLinkEnabled")
+          label(for="add-post-link") Add The Post Link
+        .field.checkbox
+          input(id="add-text", type="checkbox", v-model="addTextEnabled")
+          label(for="add-text") Add The Post Caption
+        textarea(v-show="addTextEnabled" rows="5" v-model="text")
+        .field.checkbox
+          input(id="fill-photos", type="checkbox", v-model="fillPhotos")
+          label(for="fill-photos") Fill Photos (Edges may be cropped)
+        .field.checkbox
+          input(id="no-preview", type="checkbox", v-model="hidePreview")
+          label(for="no-preview") Hide Preview
+        .actions
+          button(@click="savePDF" :disabled="working||preparing" title="Download as PDF")
+            svg(width="14" height="14" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg")
+              path(fill="currentColor" d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z")
+            span PDF
+          button(@click="saveZIP" :disabled="working||preparing" title="Download as ZIP")
+            svg(width="14" height="14" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg")
+              path(fill="currentColor" d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z")
+            span ZIP
+          button.close(@click="close" title="Close") ✕
+          span.progress(v-if="working") {{working}}
       .scroll-view
-        .buttons
-          .left-side
-            div
-              label File Name:
-              div
-                input#filename(type="text", v-model="filename")
-            div
-              div
-                input(id="add-post-link", type="checkbox", v-model="addLinkEnabled")
-                label(for="add-post-link") Add The Post Link
-              div
-                input(id="add-text", type="checkbox", v-model="addTextEnabled")
-                label(for="add-text") Add The Post Caption
-                textarea(v-show="addTextEnabled" rows="3" v-model="text")
-              div
-                input(id="fill-photos", type="checkbox", v-model="fillPhotos")
-                label(for="fill-photos") Fill Photos (Edges may be cropped)
-              div
-                input(id="no-preview", type="checkbox", v-model="hidePreview")
-                label(for="no-preview") Hide Preview
-          .right-side
-            button(@click="savePDF" :disabled="working||preparing") Save PDF
-            button(@click="saveZIP" :disabled="working||preparing") Save ZIP
-            button.close(@click="close") Close
-            span.progress(v-if="working") {{working}}
         .images
           ul
             div(v-if="preparing")
@@ -97,14 +100,72 @@
     right: 0;
     top: 0;
     bottom: 0;
+    display: flex;
+
+    .sidebar {
+      width: 270px;
+      flex-shrink: 0;
+      background-color: #fff;
+      box-shadow: 1px 0 4px rgba(0, 0, 0, 0.15);
+      padding: 20px 20px 35px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      .field {
+        label {
+          font-size: 13px;
+          vertical-align: middle;
+        }
+
+        &.checkbox input {
+          vertical-align: middle;
+          margin-right: 6px;
+        }
+      }
+
+      #filename {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 6px 0 0;
+      }
+
+      .actions {
+        padding-top: 5px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+
+        button {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          margin: 0;
+          padding: 8px 6px;
+          font-size: 14px;
+
+          &.close {
+            flex: 0 0 auto;
+            padding: 8px 12px;
+          }
+        }
+
+        .progress {
+          flex-basis: 100%;
+          text-align: center;
+          font-size: 13px;
+        }
+      }
+    }
 
     .scroll-view {
+      flex: 1;
       overflow-y: scroll;
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 30px;
+      padding-bottom: 30px;
     }
 
   }
@@ -118,41 +179,6 @@
 
     svg {
       margin: 0 2px;
-    }
-  }
-
-  .buttons {
-    background-color: #fff;
-    padding: 10px 20px 13px;
-    display: flex;
-    justify-content: space-between;
-
-    .left-side {
-      position: relative;
-
-      * {
-        vertical-align: middle;
-      }
-
-      label {
-        font-size: 12px;
-      }
-
-      > div {
-        display: inline-block;
-      }
-
-    }
-
-    .right-side {
-      position: relative;
-
-      .progress {
-        position: absolute;
-        right: 0;
-        bottom: -8px;
-        font-size: 13px;
-      }
     }
   }
 
@@ -173,13 +199,12 @@
 
   textarea {
     border-radius: 5px;
-    margin: 0 10px;
+    margin: 0;
     font-size: 12px;
     padding: 8px;
-    position: absolute;
-    left: 100%;
-    width: 200px;
-    top: 0;
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
   }
 
   button {

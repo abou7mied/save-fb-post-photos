@@ -93,7 +93,7 @@ function detectPosts() {
 function addDownloadButton(post) {
   const button = document.createElement('div');
   button.className = 'sfpp-download';
-  button.textContent = '⇩ Save photos';
+  button.textContent = '⇩ Download photos';
   button.setAttribute('role', 'button');
   button.style.cssText = [
     'position:absolute',
