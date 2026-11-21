@@ -1,9 +1,11 @@
 import app from './app';
 import getPhotoData from './getPhotoData';
+import walkMediaSet from './walkMediaSet';
 
 // Photo links keep these URL shapes even as Facebook's markup changes.
 const PHOTO_ANCHOR_SELECTOR = [
   'a[href*="/photo/?"]',
+  'a[href*="/photo?"]',
   'a[href*="/photo.php?"]',
   'a[href*="/photos/"]',
 ].join(',');
@@ -18,13 +20,33 @@ const POST_MESSAGE_SELECTOR = [
 // album can't trigger hundreds of requests.
 const MAX_SET_WALK = 300;
 
+function safeDetectPosts() {
+  try {
+    detectPosts();
+  } catch (error) {
+    // Keep periodic detection alive even if Facebook mutates DOM mid-scan.
+  }
+}
+
 function init() {
   const results = document.createElement('div');
   document.body.appendChild(results);
   app.$mount(results);
 
-  detectPosts();
-  setInterval(detectPosts, 1500);
+  setInterval(safeDetectPosts, 1500);
+  if (typeof MutationObserver !== 'undefined') {
+    let debounceTimer = null;
+    const observer = new MutationObserver(() => {
+      if (!debounceTimer) {
+        debounceTimer = setTimeout(() => {
+          debounceTimer = null;
+          safeDetectPosts();
+        }, 300);
+      }
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+  }
+  safeDetectPosts();
 }
 
 function parsePhotoAnchor(anchor) {
@@ -55,26 +77,33 @@ function parsePhotoAnchor(anchor) {
 function isInsideComment(anchor) {
   const article = anchor.closest('[role="article"]');
   const label = article && article.getAttribute('aria-label');
-  // Comments are nested articles labelled "Comment by ..." (localized).
-  return !!(label && /comment|تعليق|رد/i.test(label));
+  // Comments are nested articles labelled "Comment by ..." / "تعليق من ..." (localized).
+  // Match standalone words so Arabic page/user names containing "رد" (e.g. مراد/ورد) are not skipped.
+  return !!(label && /(^|\s)(comment|reply|تعليق|رد)(\s|$)/i.test(label));
 }
 
 function findPostContainer(anchor) {
-  // [data-virtualized] wraps each feed unit in the current UI; aria-posinset
-  // and role=article cover older layouts; role=dialog covers a post opened as
-  // a popup over the feed. role=main is only safe on permalink pages — on the
-  // feed it spans every post at once.
-  const container = anchor.closest('div[aria-posinset]')
-    || anchor.closest('[data-virtualized]')
+  // Prefer the innermost post article/unit over outer page wrappers.
+  let container = anchor.closest('div[aria-posinset]')
     || anchor.closest('[role="article"]')
+    || anchor.closest('[data-virtualized]')
     || anchor.closest('[role="dialog"]');
-  if (container) {
-    return container;
+  if (!container && window.location.pathname !== '/') {
+    container = anchor.closest('div[role="main"]');
   }
-  if (window.location.pathname !== '/') {
-    return anchor.closest('div[role="main"]');
+  // An element with display:contents cannot establish a positioning context for
+  // an absolute button; walk up to the first real layout box.
+  while (container && container.parentElement) {
+    try {
+      if (window.getComputedStyle(container).display !== 'contents') {
+        break;
+      }
+    } catch (error) {
+      break;
+    }
+    container = container.parentElement;
   }
-  return null;
+  return container || null;
 }
 
 function detectPosts() {
@@ -95,11 +124,12 @@ function addDownloadButton(post) {
   button.className = 'sfpp-download';
   button.textContent = '⇩ Download photos';
   button.setAttribute('role', 'button');
+  const topOffset = post.getAttribute('role') === 'main' ? '70px' : '10px';
   button.style.cssText = [
     'position:absolute',
-    'top:10px',
+    `top:${topOffset}`,
     'right:80px',
-    'z-index:1000',
+    'z-index:9999',
     'cursor:pointer',
     'background:#345fff',
     'color:#fff',
@@ -121,8 +151,14 @@ function addDownloadButton(post) {
         window.alert(`Save Post Photos: ${error && error.message ? error.message : error}`);
       });
   });
-  if (!post.style.position) {
-    post.style.position = 'relative';
+  try {
+    if (window.getComputedStyle(post).position === 'static') {
+      post.style.position = 'relative';
+    }
+  } catch (error) {
+    if (!post.style.position) {
+      post.style.position = 'relative';
+    }
   }
   post.appendChild(button);
 }
@@ -169,45 +205,26 @@ async function startDownload(post) {
     }
   }
 
-  const ids = photos.map(photo => photo.photoId);
-
-  // The collage preview only links the first few photos; follow the media
-  // set from the last known photo to discover the rest ("+N more").
-  // Only walk multi-photo sets so a single photo inside a big album doesn't
-  // enumerate the whole album.
-  if (setToken && (ids.length > 1 || setToken.indexOf('pcb.') === 0)) {
-    const seen = new Set(ids);
-    let cursor = ids[ids.length - 1];
-    let steps = 0;
-    while (cursor && steps < MAX_SET_WALK) {
-      steps += 1;
-      let data;
-      try {
-        data = await getPhotoData(cursor, setToken); // eslint-disable-line no-await-in-loop
-      } catch (error) {
-        break;
-      }
-      if (!data.nextId || seen.has(data.nextId)) {
-        break;
-      }
-      seen.add(data.nextId);
-      ids.push(data.nextId);
-      cursor = data.nextId;
-    }
-  }
+  const initialIds = photos.map(photo => photo.photoId);
+  const ids = await walkMediaSet(initialIds, setToken, getPhotoData, MAX_SET_WALK);
 
   const urls = [];
+  let firstError = null;
   await Promise.all(ids.map((id, index) => getPhotoData(id, setToken)
     .then((data) => {
       urls[index] = data.uri;
     })
-    .catch(() => {
+    .catch((error) => {
+      if (!firstError) {
+        firstError = error;
+      }
       urls[index] = null;
     })));
 
   const finalUrls = urls.filter(Boolean);
   if (!finalUrls.length) {
-    throw new Error('Could not resolve any photo URLs. Facebook may have changed its page format.');
+    const detail = firstError && firstError.message ? ` (${firstError.message})` : '';
+    throw new Error(`Could not resolve any photo URLs. Facebook may have changed its page format.${detail}`);
   }
   app.setImages(finalUrls);
 }
